@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Huson AI</title>
+    <style>
+        /* 媽的，你要的白色主題 */
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: #ffffff; /* 改成全白 */
+            color: #1f2937; /* 主要文字改成深色 */
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        /* 幹，你指定的藍色標題列 */
+        header {
+            background-color: #007bff; /* 靠北，這就是藍色 */
+            color: #ffffff; /* 白色標題字才看得到 */
+            text-align: center;
+            padding: 10px 0;
+            font-weight: bold;
+            font-size: 20px;
+            flex-shrink: 0;
+        }
+
+        #chat-window {
+            flex-grow: 1;
+            overflow-y: auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            background-color: #f4f5f7; /* 中間聊天區用個淺灰，比較有層次感 */
+        }
+
+        .message {
+            max-width: 70%;
+            padding: 10px 15px;
+            border-radius: 18px;
+            margin-bottom: 10px;
+            line-height: 1.5;
+        }
+        
+        /* 你的訊息，一樣用藍色 */
+        .user-message {
+            background-color: #007bff;
+            color: white;
+            align-self: flex-end;
+            border-bottom-right-radius: 4px;
+        }
+
+        /* Huson 的訊息，用個淺灰色比較搭 */
+        .huson-message {
+            background-color: #e9ecef; /* 淺灰 */
+            color: #1f2937; /* 深色文字 */
+            align-self: flex-start;
+            border-bottom-left-radius: 4px;
+        }
+
+        #input-area {
+            display: flex;
+            padding: 15px;
+            border-top: 1px solid #e5e7eb; /* 分隔線改淺一點 */
+            background-color: #ffffff;
+            flex-shrink: 0;
+        }
+
+        #userInput {
+            flex-grow: 1;
+            padding: 10px;
+            border-radius: 20px;
+            border: 1px solid #d1d5db; /* 輸入框邊線 */
+            background: #ffffff;
+            color: #1f2937;
+            font-size: 16px;
+            margin-right: 10px;
+        }
+
+        #userInput:focus {
+            outline: none;
+            border-color: #007bff; /* 點擊時，邊框變藍色 */
+        }
+
+        #sendButton {
+            width: 50px;
+            height: 40px;
+            border: none;
+            border-radius: 50%;
+            background-color: #007bff; /* 送出按鈕也用藍色 */
+            color: white;
+            cursor: pointer;
+            font-size: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+    </style>
+</head>
+<body>
+    <header>Huson-AI</header>
+    
+    <div id="chat-window">
+        </div>
+
+    <div id="input-area">
+        <input type="text" id="userInput" placeholder="問啊，俗辣">
+        <button id="sendButton">➤</button>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
