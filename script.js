@@ -1,51 +1,95 @@
 const chatWindow = document.getElementById('chat-window');
 const userInput = document.getElementById('userInput');
 const sendButton = document.getElementById('sendButton');
+const fileInput = document.getElementById('file-input');
+const imagePreviewContainer = document.getElementById('image-preview-container');
+const imagePreview = document.getElementById('image-preview');
+const clearImageButton = document.getElementById('clear-image-button');
 
-// 用一個陣列來儲存對話紀錄（包含角色是誰）
 let conversationHistory = [];
+let attachedImage = null; // 用來存放要上傳的圖片資料
+
+// --- 新增：處理圖片選擇的邏輯 ---
+fileInput.addEventListener('change', (event) => {
+    const file = event.target.files[0];
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            attachedImage = {
+                base64: e.target.result.split(',')[1], // 只要 Base64 的部分
+                mimeType: file.type,
+            };
+            imagePreview.src = e.target.result;
+            imagePreviewContainer.style.display = 'block';
+        };
+        reader.readAsDataURL(file); // 轉成 Base64
+    }
+});
+
+// --- 新增：處理清除圖片的邏輯 ---
+clearImageButton.addEventListener('click', () => {
+    attachedImage = null;
+    fileInput.value = ''; // 清空 file input
+    imagePreviewContainer.style.display = 'none';
+});
+
+// --- 新增：用來鎖定/解鎖輸入框的函式 ---
+function toggleInput(disabled) {
+    userInput.disabled = disabled;
+    sendButton.disabled = disabled;
+    fileInput.disabled = disabled;
+}
 
 // 網頁一打開就執行的初始化
 function init() {
-    const initialMessage = "我是 Huson，有什麼可以幫你的？";
+    const initialMessage = "我是 Huson，有什麼可以幫你的？照片也可以丟上來，幹。";
     addMessageToChat('huson', initialMessage);
-    
-    // 把 Huson 的開場白也加進對話歷史
-    conversationHistory.push({ role: 'model', parts: [{ text: initialMessage }] });
 }
 
 // 用來把訊息新增到聊天視窗的函式
 function addMessageToChat(sender, message) {
     const messageElement = document.createElement('div');
     messageElement.classList.add('message');
-    
     if (sender === 'user') {
         messageElement.classList.add('user-message');
     } else {
         messageElement.classList.add('huson-message');
     }
-    
     messageElement.innerText = message;
     chatWindow.appendChild(messageElement);
-    chatWindow.scrollTop = chatWindow.scrollHeight; // 自動捲到最新訊息
+    chatWindow.scrollTop = chatWindow.scrollHeight;
 }
 
 async function handleUserRequest() {
     const userText = userInput.value.trim();
-    if (!userText) return;
+    if (!userText && !attachedImage) return; // 沒文字也沒圖就滾
 
-    // 1. 在畫面上顯示使用者傳的訊息
-    addMessageToChat('user', userText);
+    toggleInput(true); // --- 修改：送出後立刻鎖定輸入 ---
+
+    // 在畫面上顯示使用者傳的訊息
+    addMessageToChat('user', userText || '(圖片分析)'); // 如果沒打字就顯示圖片分析
     
-    // 2. 把使用者的訊息加到對話歷史
-    conversationHistory.push({ role: 'user', parts: [{ text: userText }] });
-    
+    // 把使用者訊息(包含圖片)加到對話歷史
+    const userParts = [];
+    if (userText) {
+        userParts.push({ text: userText });
+    }
+    if (attachedImage) {
+        userParts.push({
+            inline_data: {
+                mime_type: attachedImage.mimeType,
+                data: attachedImage.base64,
+            },
+        });
+    }
+    conversationHistory.push({ role: 'user', parts: userParts });
+
     // 清空輸入框並顯示「正在輸入...」
     userInput.value = '';
+    clearImageButton.click(); // 清除預覽圖
     addMessageToChat('huson', '我想一下，雞掰...');
 
     try {
-        // 3. 把「整串對話紀錄」丟給後端
         const response = await fetch('/.netlify/functions/get-gemini-response', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -59,17 +103,17 @@ async function handleUserRequest() {
         const data = await response.json();
         const husonResponse = data.text;
 
-        // 移除「我想一下...」那則訊息，換成真正的回覆
         chatWindow.removeChild(chatWindow.lastChild);
         addMessageToChat('huson', husonResponse);
         
-        // 4. 把 Huson 的回覆也加到對話歷史
         conversationHistory.push({ role: 'model', parts: [{ text: husonResponse }] });
 
     } catch (error) {
         console.error("出錯了幹:", error);
         chatWindow.removeChild(chatWindow.lastChild);
         addMessageToChat('huson', "幹你娘，API 好像掛了，媽的。");
+    } finally {
+        toggleInput(false); // --- 修改：不管成功還失敗，最後都要解鎖 ---
     }
 }
 
@@ -80,5 +124,4 @@ userInput.addEventListener('keypress', (event) => {
     }
 });
 
-// 啟動！
 init();
