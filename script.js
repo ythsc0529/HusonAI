@@ -42,7 +42,7 @@ function toggleInput(disabled) {
 
 // 網頁一打開就執行的初始化
 function init() {
-    const initialMessage = "我是 Huson，有什麼可以幫你的？照片也可以丟上來，幹。";
+    const initialMessage = "我是 Huson，有什麼可以幫你的？";
     addMessageToChat('huson', initialMessage);
 }
 
@@ -67,7 +67,7 @@ async function handleUserRequest() {
     toggleInput(true); // --- 修改：送出後立刻鎖定輸入 ---
 
     // 在畫面上顯示使用者傳的訊息
-    addMessageToChat('user', userText || '(圖片分析)'); // 如果沒打字就顯示圖片分析
+    addMessageToChat('user', userText || '正在使用圖片分析功能'); // 如果沒打字就顯示圖片分析
     
     // 把使用者訊息(包含圖片)加到對話歷史
     const userParts = [];
@@ -87,7 +87,7 @@ async function handleUserRequest() {
     // 清空輸入框並顯示「正在輸入...」
     userInput.value = '';
     clearImageButton.click(); // 清除預覽圖
-    addMessageToChat('huson', '我想一下，雞掰...');
+    addMessageToChat('huson', '正在思考');
 
     try {
         const response = await fetch('/.netlify/functions/get-gemini-response', {
@@ -97,7 +97,7 @@ async function handleUserRequest() {
         });
 
         if (!response.ok) {
-            throw new Error(`幹，伺服器出包了，代碼：${response.status}`);
+            throw new Error(`伺服器出包了，代碼：${response.status}`);
         }
 
         const data = await response.json();
@@ -109,9 +109,9 @@ async function handleUserRequest() {
         conversationHistory.push({ role: 'model', parts: [{ text: husonResponse }] });
 
     } catch (error) {
-        console.error("出錯了幹:", error);
+        console.error("出錯了:", error);
         chatWindow.removeChild(chatWindow.lastChild);
-        addMessageToChat('huson', "幹你娘，API 好像掛了，媽的。");
+        addMessageToChat('huson', "API 好像掛了，請稍後再試。");
     } finally {
         toggleInput(false); // --- 修改：不管成功還失敗，最後都要解鎖 ---
     }
