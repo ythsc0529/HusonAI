@@ -6,6 +6,7 @@ const fileInput = document.getElementById('file-input');
 const imagePreviewContainer = document.getElementById('image-preview-container');
 const imagePreview = document.getElementById('image-preview');
 const clearImageButton = document.getElementById('clear-image-button');
+const micBtn = document.getElementById('mic-btn');
 const updateNotification = document.getElementById('update-notification');
 const updateTitle = document.getElementById('update-title');
 const updateContent = document.getElementById('update-content');
@@ -17,19 +18,19 @@ const overlay = document.getElementById('overlay');
 // --- 應用程式狀態 ---
 let conversationHistory = [];
 let attachedImage = null;
+let isListening = false;
 
 // --- 你的更新資訊 (你可以自行修改這些內容) ---
 const latestUpdate = {
-    version: '2.0.0', // 用版本號來判斷
-    title: 'Huson-AI 2.0 上線啦！',
+    version: '2.0.1', // 我幫你升一版，這樣更新通知才會跳出來
+    title: 'Huson-AI 2.0.1 更新',
     content: `
-        **重大更新！**
-        * 核心升級，數學推理能力大幅提升。
-        * 看得懂圖片了，現在你可以上傳圖片讓他分析。
-        * 訊息格式大進化，支援 **粗體**、表格、程式碼等。
+        * **新增** 複製按鈕，讓你輕鬆複製 AI 的回應。
+        * **新增** 語音輸入，按麥克風就能講話，懶人專用。
+        * **修正** 修正了一些用戶提出的bug。
     `,
-    imageSrc: '', // 你可以放圖片網址，或留空
-    privacyPolicyUrl: 'privacy.html' // 你的隱私權政策頁面
+    imageSrc: '',
+    privacyPolicyUrl: 'privacy.html'
 };
 
 // --- 頁面載入時執行 ---
@@ -38,13 +39,13 @@ window.onload = () => {
     if (lastSeenVersion !== latestUpdate.version) {
         displayUpdateNotification(latestUpdate);
     }
-    init(); // 執行 AI 初始化問候
+    init();
 };
 
 // --- 更新通知功能 ---
 function displayUpdateNotification(info) {
     updateTitle.innerText = info.title;
-    updateContent.innerHTML = marked.parse(info.content); // 用 marked 解析內容
+    updateContent.innerHTML = marked.parse(info.content);
     if (info.imageSrc) {
         updateImage.src = info.imageSrc;
         updateImage.style.display = 'block';
@@ -77,11 +78,15 @@ fileInput.addEventListener('change', (event) => {
     }
 });
 
-clearImageButton.addEventListener('click', () => {
+// ★★★ 這是我幫你改的更穩定的清除圖片函式 ★★★
+function clearAttachedImage() {
     attachedImage = null;
-    fileInput.value = '';
+    fileInput.value = ''; // 這行很重要，不然你沒辦法重選同一張圖
     imagePreviewContainer.style.display = 'none';
-});
+}
+
+clearImageButton.addEventListener('click', clearAttachedImage);
+
 
 // --- 核心聊天功能 ---
 function toggleInput(disabled) {
@@ -89,20 +94,43 @@ function toggleInput(disabled) {
     sendButton.disabled = disabled;
     fileInput.disabled = disabled;
     clearImageButton.disabled = disabled;
+    micBtn.disabled = disabled;
 }
 
 function init() {
-    const initialMessage = "我是Huson，有什麼可以幫你的?";
+    const initialMessage = "我是Huson 有什麼可以幫你的嗎";
     addMessageToChat('huson', initialMessage);
 }
 
-// 修改：這個函式現在用 innerHTML 和 marked.js 來顯示內容
 function addMessageToChat(sender, message) {
-    const messageElement = document.createElement('div');
-    messageElement.classList.add('message', sender === 'user' ? 'user-message' : 'huson-message');
-    // 使用 marked.parse 將 Markdown 轉成 HTML
-    messageElement.innerHTML = marked.parse(message);
-    chatWindow.appendChild(messageElement);
+    const messageContainer = document.createElement('div');
+    messageContainer.classList.add('message', sender === 'user' ? 'user-message' : 'huson-message');
+    
+    const contentDiv = document.createElement('div');
+    contentDiv.innerHTML = marked.parse(message);
+    messageContainer.appendChild(contentDiv);
+
+    if (sender === 'huson') {
+        const copyBtn = document.createElement('button');
+        copyBtn.className = 'copy-btn';
+        copyBtn.title = '複製內文';
+        const copyIcon = `<svg viewBox="0 0 24 24"><path fill="currentColor" d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z" /></svg>`;
+        const checkIcon = `<svg viewBox="0 0 24 24"><path fill="currentColor" d="M21,7L9,19L3.5,13.5L4.91,12.09L9,16.17L19.59,5.59L21,7Z" /></svg>`;
+        copyBtn.innerHTML = copyIcon;
+
+        copyBtn.addEventListener('click', () => {
+            navigator.clipboard.writeText(contentDiv.innerText).then(() => {
+                copyBtn.innerHTML = checkIcon;
+                setTimeout(() => { copyBtn.innerHTML = copyIcon; }, 1500);
+            }).catch(err => {
+                console.error('複製失敗:', err);
+                alert('複製失敗，你的瀏覽器可能太舊或不支援。');
+            });
+        });
+        messageContainer.appendChild(copyBtn);
+    }
+    
+    chatWindow.appendChild(messageContainer);
     chatWindow.scrollTop = chatWindow.scrollHeight;
 }
 
@@ -112,7 +140,6 @@ async function handleUserRequest() {
 
     toggleInput(true);
 
-    // 修改：在聊天視窗中顯示使用者訊息(含圖片預覽)
     const userMessageDiv = document.createElement('div');
     if (userText) {
         const textNode = document.createElement('p');
@@ -137,7 +164,7 @@ async function handleUserRequest() {
     conversationHistory.push({ role: 'user', parts: userParts });
 
     userInput.value = '';
-    clearImageButton.click();
+    clearAttachedImage(); // ★★★ 我在這裡直接呼叫清除函式，保證清掉 ★★★
     addMessageToChat('huson', '正在思考');
 
     try {
@@ -158,14 +185,69 @@ async function handleUserRequest() {
         conversationHistory.push({ role: 'model', parts: [{ text: husonResponse }] });
 
     } catch (error) {
-        console.error("出錯了:", error);
+        console.error("出錯了幹:", error);
         chatWindow.removeChild(chatWindow.lastChild);
-        addMessageToChat('huson', "API 好像掛了");
+        addMessageToChat('huson', "API 出錯了，可能是網路問題或伺服器炸了。請稍後再試。");
     } finally {
         toggleInput(false);
     }
 }
 
+
+// --- 語音辨識功能 ---
+const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+let recognition;
+
+if (SpeechRecognition) {
+    recognition = new SpeechRecognition();
+    recognition.continuous = false;
+    recognition.lang = 'zh-TW';
+    recognition.interimResults = true;
+
+    micBtn.addEventListener('click', () => {
+        if (!isListening) {
+            recognition.start();
+        } else {
+            recognition.stop();
+        }
+    });
+
+    recognition.onstart = () => {
+        isListening = true;
+        micBtn.classList.add('listening');
+        userInput.placeholder = '正在聽你講話，請說...';
+    };
+
+    recognition.onend = () => {
+        isListening = false;
+        micBtn.classList.remove('listening');
+        userInput.placeholder = '問我問題或上傳圖片';
+    };
+
+    recognition.onresult = (event) => {
+        let interimTranscript = '';
+        let finalTranscript = '';
+        for (let i = event.resultIndex; i < event.results.length; ++i) {
+            if (event.results[i].isFinal) {
+                finalTranscript += event.results[i][0].transcript;
+            } else {
+                interimTranscript += event.results[i][0].transcript;
+            }
+        }
+        userInput.value = finalTranscript || interimTranscript;
+    };
+
+    recognition.onerror = (event) => {
+        console.error('語音辨識錯誤:', event.error);
+        alert(`語音辨識出錯了，錯誤類型: ${event.error}`);
+    };
+
+} else {
+    console.log("你的瀏覽器暫不支援此功能，建議使用chrome或safari。");
+    micBtn.style.display = 'none';
+}
+
+// --- 事件監聽 ---
 sendButton.addEventListener('click', handleUserRequest);
 userInput.addEventListener('keypress', (event) => {
     if (event.key === 'Enter') handleUserRequest();
