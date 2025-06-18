@@ -7,7 +7,11 @@
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <style>
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; background-color: #ffffff; color: #1f2937; margin: 0; display: flex; flex-direction: column; height: 100vh; }
-        header { background-color: #007bff; color: #ffffff; text-align: center; padding: 10px 0; font-weight: bold; font-size: 20px; flex-shrink: 0; }
+        header { 
+            background-color: #007bff; color: #ffffff; text-align: center; padding: 10px 0; 
+            font-weight: bold; font-size: 20px; flex-shrink: 0;
+            display: flex; justify-content: center; align-items: center;
+        }
         #chat-window { flex-grow: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; background-color: #f4f5f7; }
         .message { max-width: 75%; padding: 10px 15px; border-radius: 18px; margin-bottom: 10px; line-height: 1.6; word-wrap: break-word; position: relative; }
         .user-message { background-color: #007bff; color: white; align-self: flex-end; border-bottom-right-radius: 4px; }
@@ -46,10 +50,61 @@
         #update-buttons button { padding: 8px 15px; border-radius: 5px; cursor: pointer; font-weight: bold; }
         #privacy-policy-button { margin-right: 10px; border: 1px solid #007bff; background-color: transparent; color: #007bff; }
         #close-notification { background-color: #007bff; color: white; border: none; }
+
+        /* 模型切換器的樣式 */
+        #model-switcher {
+            margin-left: 15px;
+            display: flex;
+            align-items: center;
+            font-size: 14px;
+            color: #f0f0f0; /* 讓文字在藍色背景上更清楚 */
+        }
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 24px;
+            margin: 0 8px;
+        }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 24px;
+        }
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        input:checked + .slider { background-color: #f0ad4e; }
+        input:checked + .slider:before { transform: translateX(26px); }
     </style>
 </head>
 <body>
-    <header>Huson-AI <span style="font-size: 0.7em;">2.0 mini</span></header>
+    <header>
+        <span>Huson-AI <span style="font-size: 0.7em;"></span></span>
+        <div id="model-switcher">
+            <span>2.0 mini</span>
+            <label class="switch">
+                <input type="checkbox" id="model-toggle">
+                <span class="slider"></span>
+            </label>
+            <span>2.5</span>
+        </div>
+    </header>
 
     <div id="overlay"></div>
     <div id="update-notification">
@@ -77,7 +132,7 @@
             <button id="mic-btn" title="語音輸入">
                 <svg class="icon" viewBox="0 0 24 24"><path fill="currentColor" d="M12,14A3,3 0 0,0 15,11V5A3,3 0 0,0 12,2A3,3 0 0,0 9,5V11A3,3 0 0,0 12,14M17.3,11C17.3,14.39 14.76,17.1 11.5,17.1C8.24,17.1 5.7,14.39 5.7,11H4V11A8,8 0 0,0 11.5,18.82V22H12.5V18.82A8,8 0 0,0 20,11H18.3Z"></path></svg>
             </button>
-            <input type="text" id="userInput" placeholder="問我問題或上傳圖片">
+            <input type="text" id="userInput" placeholder="講話啊，或打字啦">
             <button id="sendButton">➤</button>
         </div>
     </div>

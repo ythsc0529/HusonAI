@@ -7,6 +7,7 @@ const imagePreviewContainer = document.getElementById('image-preview-container')
 const imagePreview = document.getElementById('image-preview');
 const clearImageButton = document.getElementById('clear-image-button');
 const micBtn = document.getElementById('mic-btn');
+const modelToggle = document.getElementById('model-toggle'); // 模型切換開關
 const updateNotification = document.getElementById('update-notification');
 const updateTitle = document.getElementById('update-title');
 const updateContent = document.getElementById('update-content');
@@ -19,15 +20,15 @@ const overlay = document.getElementById('overlay');
 let conversationHistory = [];
 let attachedImage = null;
 let isListening = false;
+let currentModel = 'gemini-2.0-flash'; // 預設模型
 
-// --- 你的更新資訊 (你可以自行修改這些內容) ---
+// --- 你的更新資訊 ---
 const latestUpdate = {
-    version: '2.0.1', // 我幫你升一版，這樣更新通知才會跳出來
-    title: 'Huson-AI 2.0.1 更新',
+    version: '2.0.3', // 我幫你升一版，這樣更新通知才會跳出來
+    title: 'Huson-AI 2.0.3 模型切換功能',
     content: `
-        * **新增** 複製按鈕，讓你輕鬆複製 AI 的回應。
-        * **新增** 語音輸入，按麥克風就能講話，懶人專用。
-        * **修正** 修正了一些用戶提出的bug。
+        * **新功能**：標題旁邊新增了模型切換器，讓你可以在 2.0 mini(回應速度較快，適合日常使用)2.5(回應速度慢，適合數學或程式) 之間自由選擇！
+        * **注意**：高階模型可能反應比較慢或有其他特性，自己體驗看看。
     `,
     imageSrc: '',
     privacyPolicyUrl: 'privacy.html'
@@ -78,15 +79,13 @@ fileInput.addEventListener('change', (event) => {
     }
 });
 
-// ★★★ 這是我幫你改的更穩定的清除圖片函式 ★★★
 function clearAttachedImage() {
     attachedImage = null;
-    fileInput.value = ''; // 這行很重要，不然你沒辦法重選同一張圖
+    fileInput.value = '';
     imagePreviewContainer.style.display = 'none';
 }
 
 clearImageButton.addEventListener('click', clearAttachedImage);
-
 
 // --- 核心聊天功能 ---
 function toggleInput(disabled) {
@@ -98,7 +97,7 @@ function toggleInput(disabled) {
 }
 
 function init() {
-    const initialMessage = "我是Huson 有什麼可以幫你的嗎";
+    const initialMessage = "我是 Huson 2.0。你可以用上面的開關切換模型，也可以問我問題";
     addMessageToChat('huson', initialMessage);
 }
 
@@ -164,17 +163,20 @@ async function handleUserRequest() {
     conversationHistory.push({ role: 'user', parts: userParts });
 
     userInput.value = '';
-    clearAttachedImage(); // ★★★ 我在這裡直接呼叫清除函式，保證清掉 ★★★
-    addMessageToChat('huson', '正在思考');
+    clearAttachedImage();
+    addMessageToChat('huson', '...');
 
     try {
         const response = await fetch('/.netlify/functions/get-gemini-response', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ history: conversationHistory }),
+            body: JSON.stringify({ 
+                history: conversationHistory,
+                model: currentModel // 把當前選擇的模型名稱傳給後端
+            }),
         });
 
-        if (!response.ok) throw new Error(`伺服器出包了，錯誤代碼：${response.status}`);
+        if (!response.ok) throw new Error(`伺服器出包了，代碼：${response.status}`);
 
         const data = await response.json();
         const husonResponse = data.text;
@@ -185,14 +187,13 @@ async function handleUserRequest() {
         conversationHistory.push({ role: 'model', parts: [{ text: husonResponse }] });
 
     } catch (error) {
-        console.error("出錯了幹:", error);
+        console.error("出錯了:", error);
         chatWindow.removeChild(chatWindow.lastChild);
-        addMessageToChat('huson', "API 出錯了，可能是網路問題或伺服器炸了。請稍後再試。");
+        addMessageToChat('huson', "API 好像掛了");
     } finally {
         toggleInput(false);
     }
 }
-
 
 // --- 語音辨識功能 ---
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -204,51 +205,32 @@ if (SpeechRecognition) {
     recognition.lang = 'zh-TW';
     recognition.interimResults = true;
 
-    micBtn.addEventListener('click', () => {
-        if (!isListening) {
-            recognition.start();
-        } else {
-            recognition.stop();
-        }
-    });
-
-    recognition.onstart = () => {
-        isListening = true;
-        micBtn.classList.add('listening');
-        userInput.placeholder = '正在聽你講話，請說...';
-    };
-
-    recognition.onend = () => {
-        isListening = false;
-        micBtn.classList.remove('listening');
-        userInput.placeholder = '問我問題或上傳圖片';
-    };
-
+    micBtn.addEventListener('click', () => { if (!isListening) { recognition.start(); } else { recognition.stop(); } });
+    recognition.onstart = () => { isListening = true; micBtn.classList.add('listening'); userInput.placeholder = '正在聆聽'; };
+    recognition.onend = () => { isListening = false; micBtn.classList.remove('listening'); userInput.placeholder = '問我問題或上傳圖片'; };
     recognition.onresult = (event) => {
         let interimTranscript = '';
         let finalTranscript = '';
         for (let i = event.resultIndex; i < event.results.length; ++i) {
-            if (event.results[i].isFinal) {
-                finalTranscript += event.results[i][0].transcript;
-            } else {
-                interimTranscript += event.results[i][0].transcript;
-            }
+            if (event.results[i].isFinal) { finalTranscript += event.results[i][0].transcript; } else { interimTranscript += event.results[i][0].transcript; }
         }
         userInput.value = finalTranscript || interimTranscript;
     };
-
-    recognition.onerror = (event) => {
-        console.error('語音辨識錯誤:', event.error);
-        alert(`語音辨識出錯了，錯誤類型: ${event.error}`);
-    };
-
+    recognition.onerror = (event) => { console.error('語音辨識錯誤:', event.error); alert(`語音辨識出錯了。錯誤類型: ${event.error}`); };
 } else {
-    console.log("你的瀏覽器暫不支援此功能，建議使用chrome或safari。");
+    console.log("你的瀏覽器不支援語音辨識啦請使用chrome或safari。");
     micBtn.style.display = 'none';
 }
 
 // --- 事件監聽 ---
 sendButton.addEventListener('click', handleUserRequest);
-userInput.addEventListener('keypress', (event) => {
-    if (event.key === 'Enter') handleUserRequest();
+userInput.addEventListener('keypress', (event) => { if (event.key === 'Enter') handleUserRequest(); });
+modelToggle.addEventListener('change', () => {
+    if (modelToggle.checked) {
+        currentModel = 'gemini-2.5-flash';
+        console.log("模型切換至：", currentModel);
+    } else {
+        currentModel = 'gemini-2.0-flash';
+        console.log("模型切換至：", currentModel);
+    }
 });
