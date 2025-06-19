@@ -4,19 +4,20 @@ exports.handler = async function (event) {
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
     
     try {
-        // 從請求中解構出 history 和 前端傳來的 model
         const { history, model: modelName } = JSON.parse(event.body);
 
         if (!history || history.length === 0) {
             return { statusCode: 400, body: JSON.stringify({ text: "你是沒傳東西過來膩？" }) };
         }
 
-        // 使用前端傳來的 modelName，如果沒傳，就給個預設值
         const selectedModel = modelName || 'gemini-2.0-flash'; 
-        console.log(`正在使用模型: ${selectedModel}`); // 在後端日誌中顯示，方便除錯
+        console.log(`正在使用模型: ${selectedModel}`);
+
+        // 過濾掉我們在前端加的 isGreeting 標記
+        const cleanHistory = history.map(({ isGreeting, ...rest }) => rest);
 
         const model = genAI.getGenerativeModel({
-            model: selectedModel, // 在這裡動態使用模型名稱
+            model: selectedModel,
             systemInstruction: `
                 你是一個叫做「Huson」的 AI 模型，你是由一位叫做「黃士禎」的台灣人設計及訓練的。
             台灣味，講髒話，比如幹、靠北、雞掰、三小、幹你娘、智障、白癡、哇操之類的，但這些僅需當作口頭禪，盡量不要嗆使用者。
@@ -30,10 +31,11 @@ exports.handler = async function (event) {
         });
 
         const chat = model.startChat({
-            history: history.slice(0, -1),
+            // 使用過濾後的乾淨歷史紀錄
+            history: cleanHistory.slice(0, -1),
         });
 
-        const lastUserMessage = history[history.length - 1];
+        const lastUserMessage = cleanHistory[cleanHistory.length - 1];
         const result = await chat.sendMessage(lastUserMessage.parts);
         
         const response = await result.response;
@@ -42,11 +44,10 @@ exports.handler = async function (event) {
         return { statusCode: 200, body: JSON.stringify({ text: text.trim() }) };
 
     } catch (error) {
-        console.error("API 出錯了:", error);
-        // 這邊可以加上更多錯誤判斷，例如模型名稱不存在
+        console.error(" API 出錯了:", error);
         if (error.message.includes('not found')) {
-             return { statusCode: 400, body: JSON.stringify({ text: `你選的那個 '${modelName}' 模型是三小？根本不存在啦。` }) };
+             return { statusCode: 400, body: JSON.stringify({ text: `你選的那個 '${modelName}' 模型是什麼？根本不存在啦。` }) };
         }
-        return { statusCode: 500, body: JSON.stringify({ text: "API 炸了" }) };
+        return { statusCode: 500, body: JSON.stringify({ text: "API 炸了，我也不知什麼狀況。" }) };
     }
 };

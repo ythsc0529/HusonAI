@@ -7,7 +7,8 @@ const imagePreviewContainer = document.getElementById('image-preview-container')
 const imagePreview = document.getElementById('image-preview');
 const clearImageButton = document.getElementById('clear-image-button');
 const micBtn = document.getElementById('mic-btn');
-const modelToggle = document.getElementById('model-toggle'); // 模型切換開關
+const modelSelector = document.getElementById('model-selector');
+const versionTitle = document.getElementById('version-title');
 const updateNotification = document.getElementById('update-notification');
 const updateTitle = document.getElementById('update-title');
 const updateContent = document.getElementById('update-content');
@@ -17,19 +18,19 @@ const privacyPolicyButton = document.getElementById('privacy-policy-button');
 const overlay = document.getElementById('overlay');
 
 // --- 應用程式狀態 ---
-let conversationHistory = [];
 let attachedImage = null;
 let isListening = false;
-let currentModel = 'gemini-2.0-flash'; // 預設模型
+let currentModel = modelSelector.value;
+let chatHistories = {
+    'gemini-2.0-flash': [],
+    'gemini-2.5-flash': []
+};
 
 // --- 你的更新資訊 ---
 const latestUpdate = {
-    version: '2.0.3', // 我幫你升一版，這樣更新通知才會跳出來
-    title: 'Huson-AI 2.0.3 模型切換功能',
-    content: `
-        * **新功能**：標題旁邊新增了模型切換器，讓你可以在 2.0 mini(回應速度較快，適合日常使用)2.5(回應速度慢，適合數學或程式) 之間自由選擇！
-        * **注意**：高階模型可能反應比較慢或有其他特性，自己體驗看看。
-    `,
+    version: '2.0.4',
+    title: 'Huson-AI 2.0.4 對話系統升級',
+    content: `* **重大更新**：現在切換模型會保留各自的對話紀錄了，就像開獨立的聊天室一樣。`,
     imageSrc: '',
     privacyPolicyUrl: 'privacy.html'
 };
@@ -40,7 +41,7 @@ window.onload = () => {
     if (lastSeenVersion !== latestUpdate.version) {
         displayUpdateNotification(latestUpdate);
     }
-    init();
+    loadConversation(currentModel);
 };
 
 // --- 更新通知功能 ---
@@ -94,37 +95,61 @@ function toggleInput(disabled) {
     fileInput.disabled = disabled;
     clearImageButton.disabled = disabled;
     micBtn.disabled = disabled;
+    modelSelector.disabled = disabled;
 }
 
-function init() {
-    const initialMessage = "我是 Huson 2.0。你可以用上面的開關切換模型，也可以問我問題";
-    addMessageToChat('huson', initialMessage);
+function loadConversation(modelName) {
+    const selectedOption = modelSelector.querySelector(`option[value="${modelName}"]`);
+    versionTitle.innerText = selectedOption.innerText;
+    chatWindow.innerHTML = '';
+    const history = chatHistories[modelName];
+    if (history.length === 0) {
+        const initialMessage = `我是 Huson，目前使用 ${selectedOption.innerText} 模型。`;
+        if (!chatHistories[modelName].some(m => m.role === 'model' && m.isGreeting)) {
+             const greeting = { role: 'model', parts: [{ text: initialMessage }], isGreeting: true };
+             chatHistories[modelName].push(greeting);
+             renderMessage('model', greeting.parts, true);
+        }
+    } else {
+        history.forEach(message => {
+            renderMessage(message.role, message.parts, message.isGreeting);
+        });
+    }
 }
 
-function addMessageToChat(sender, message) {
+function renderMessage(sender, parts, isGreeting = false) {
+    const role = (sender === 'user') ? 'user' : 'huson';
     const messageContainer = document.createElement('div');
-    messageContainer.classList.add('message', sender === 'user' ? 'user-message' : 'huson-message');
-    
+    messageContainer.classList.add('message', `${role}-message`);
+
     const contentDiv = document.createElement('div');
-    contentDiv.innerHTML = marked.parse(message);
+    
+    parts.forEach(part => {
+        if (part.text) {
+            const textElement = document.createElement('div');
+            textElement.innerHTML = marked.parse(part.text);
+            contentDiv.appendChild(textElement);
+        } else if (part.inline_data || part.originalUrl) {
+            const imgNode = document.createElement('img');
+            imgNode.src = part.originalUrl || `data:${part.inline_data.mime_type};base64,${part.inline_data.data}`;
+            contentDiv.appendChild(imgNode);
+        }
+    });
+    
     messageContainer.appendChild(contentDiv);
 
-    if (sender === 'huson') {
+    if (role === 'huson' && !isGreeting) {
         const copyBtn = document.createElement('button');
         copyBtn.className = 'copy-btn';
         copyBtn.title = '複製內文';
         const copyIcon = `<svg viewBox="0 0 24 24"><path fill="currentColor" d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z" /></svg>`;
         const checkIcon = `<svg viewBox="0 0 24 24"><path fill="currentColor" d="M21,7L9,19L3.5,13.5L4.91,12.09L9,16.17L19.59,5.59L21,7Z" /></svg>`;
         copyBtn.innerHTML = copyIcon;
-
         copyBtn.addEventListener('click', () => {
             navigator.clipboard.writeText(contentDiv.innerText).then(() => {
                 copyBtn.innerHTML = checkIcon;
                 setTimeout(() => { copyBtn.innerHTML = copyIcon; }, 1500);
-            }).catch(err => {
-                console.error('複製失敗:', err);
-                alert('複製失敗，你的瀏覽器可能太舊或不支援。');
-            });
+            }).catch(err => console.error('複製失敗:', err));
         });
         messageContainer.appendChild(copyBtn);
     }
@@ -139,57 +164,48 @@ async function handleUserRequest() {
 
     toggleInput(true);
 
-    const userMessageDiv = document.createElement('div');
-    if (userText) {
-        const textNode = document.createElement('p');
-        textNode.textContent = userText;
-        userMessageDiv.appendChild(textNode);
-    }
-    if (attachedImage) {
-        const imgNode = document.createElement('img');
-        imgNode.src = attachedImage.originalUrl;
-        userMessageDiv.appendChild(imgNode);
-    }
-    const messageContainer = document.createElement('div');
-    messageContainer.classList.add('message', 'user-message');
-    messageContainer.appendChild(userMessageDiv);
-    chatWindow.appendChild(messageContainer);
-    chatWindow.scrollTop = chatWindow.scrollHeight;
-
-    const userParts = [];
-    if (userText) userParts.push({ text: userText });
-    if (attachedImage) userParts.push({ inline_data: { mime_type: attachedImage.mimeType, data: attachedImage.base64 } });
+    const userPartsForDisplay = [];
+    if (userText) userPartsForDisplay.push({ text: userText });
+    if (attachedImage) userPartsForDisplay.push({ originalUrl: attachedImage.originalUrl });
+    renderMessage('user', userPartsForDisplay);
     
-    conversationHistory.push({ role: 'user', parts: userParts });
+    const userPartsForApi = [];
+    if (userText) userPartsForApi.push({ text: userText });
+    if (attachedImage) userPartsForApi.push({ inline_data: { mime_type: attachedImage.mimeType, data: attachedImage.base64 } });
+
+    chatHistories[currentModel].push({ role: 'user', parts: userPartsForApi });
 
     userInput.value = '';
     clearAttachedImage();
-    addMessageToChat('huson', '...');
+    
+    const thinkingMessage = document.createElement('div');
+    thinkingMessage.classList.add('message', 'huson-message');
+    thinkingMessage.innerText = '正在思考';
+    chatWindow.appendChild(thinkingMessage);
+    chatWindow.scrollTop = chatWindow.scrollHeight;
 
     try {
         const response = await fetch('/.netlify/functions/get-gemini-response', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ 
-                history: conversationHistory,
-                model: currentModel // 把當前選擇的模型名稱傳給後端
+                history: chatHistories[currentModel],
+                model: currentModel
             }),
         });
 
         if (!response.ok) throw new Error(`伺服器出包了，代碼：${response.status}`);
-
         const data = await response.json();
         const husonResponse = data.text;
+        chatHistories[currentModel].push({ role: 'model', parts: [{ text: husonResponse }] });
 
-        chatWindow.removeChild(chatWindow.lastChild);
-        addMessageToChat('huson', husonResponse);
+        chatWindow.removeChild(thinkingMessage);
+        renderMessage('huson', [{ text: husonResponse }]);
         
-        conversationHistory.push({ role: 'model', parts: [{ text: husonResponse }] });
-
     } catch (error) {
         console.error("出錯了:", error);
-        chatWindow.removeChild(chatWindow.lastChild);
-        addMessageToChat('huson', "API 好像掛了");
+        chatWindow.removeChild(thinkingMessage);
+        renderMessage('huson', [{ text: "API 好像掛了" }]);
     } finally {
         toggleInput(false);
     }
@@ -198,16 +214,14 @@ async function handleUserRequest() {
 // --- 語音辨識功能 ---
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 let recognition;
-
 if (SpeechRecognition) {
     recognition = new SpeechRecognition();
     recognition.continuous = false;
     recognition.lang = 'zh-TW';
     recognition.interimResults = true;
-
     micBtn.addEventListener('click', () => { if (!isListening) { recognition.start(); } else { recognition.stop(); } });
-    recognition.onstart = () => { isListening = true; micBtn.classList.add('listening'); userInput.placeholder = '正在聆聽'; };
-    recognition.onend = () => { isListening = false; micBtn.classList.remove('listening'); userInput.placeholder = '問我問題或上傳圖片'; };
+    recognition.onstart = () => { isListening = true; micBtn.classList.add('listening'); userInput.placeholder = '正在聽你講話，請說...'; };
+    recognition.onend = () => { isListening = false; micBtn.classList.remove('listening'); userInput.placeholder = '講話啊，或打字啦'; };
     recognition.onresult = (event) => {
         let interimTranscript = '';
         let finalTranscript = '';
@@ -216,21 +230,17 @@ if (SpeechRecognition) {
         }
         userInput.value = finalTranscript || interimTranscript;
     };
-    recognition.onerror = (event) => { console.error('語音辨識錯誤:', event.error); alert(`語音辨識出錯了。錯誤類型: ${event.error}`); };
+    recognition.onerror = (event) => { console.error('語音辨識錯誤:', event.error); alert(`語音辨識出錯了，錯誤類型: ${event.error}`); };
 } else {
-    console.log("你的瀏覽器不支援語音辨識啦請使用chrome或safari。");
+    console.log("你的瀏覽器不支援語音辨識啦。");
     micBtn.style.display = 'none';
 }
 
 // --- 事件監聽 ---
 sendButton.addEventListener('click', handleUserRequest);
 userInput.addEventListener('keypress', (event) => { if (event.key === 'Enter') handleUserRequest(); });
-modelToggle.addEventListener('change', () => {
-    if (modelToggle.checked) {
-        currentModel = 'gemini-2.5-flash';
-        console.log("模型切換至：", currentModel);
-    } else {
-        currentModel = 'gemini-2.0-flash';
-        console.log("模型切換至：", currentModel);
-    }
+modelSelector.addEventListener('change', (event) => {
+    currentModel = event.target.value;
+    console.log("模型切換至：", currentModel);
+    loadConversation(currentModel);
 });
