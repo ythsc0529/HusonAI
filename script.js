@@ -28,9 +28,9 @@ let chatHistories = {
 
 // --- 你的更新資訊 ---
 const latestUpdate = {
-    version: '2.0.4',
-    title: 'Huson-AI 2.0.4 對話系統升級',
-    content: `* **重大更新**：現在切換模型會保留各自的對話紀錄了，就像開獨立的聊天室一樣。`,
+    version: '2.0.5', // 我幫你升一版，代表這是修復版
+    title: 'Huson-AI 2.0.5 穩定性更新',
+    content: `* **修正**：修復了切換模型後，傳送第一則訊息會導致 API 錯誤的智障問題。`,
     imageSrc: '',
     privacyPolicyUrl: 'privacy.html'
 };
@@ -98,19 +98,19 @@ function toggleInput(disabled) {
     modelSelector.disabled = disabled;
 }
 
+// ★★★ Bug 修正就在這個函式裡 ★★★
 function loadConversation(modelName) {
     const selectedOption = modelSelector.querySelector(`option[value="${modelName}"]`);
     versionTitle.innerText = selectedOption.innerText;
     chatWindow.innerHTML = '';
     const history = chatHistories[modelName];
+
     if (history.length === 0) {
-        const initialMessage = `我是 Huson，目前使用 ${selectedOption.innerText} 模型。`;
-        if (!chatHistories[modelName].some(m => m.role === 'model' && m.isGreeting)) {
-             const greeting = { role: 'model', parts: [{ text: initialMessage }], isGreeting: true };
-             chatHistories[modelName].push(greeting);
-             renderMessage('model', greeting.parts, true);
-        }
+        // 如果這個模型的對話是空的，只顯示問候語，**不要**把它存到歷史紀錄裡
+        const initialMessage = `我是 Huson，目前使用 ${selectedOption.innerText} 模型。請問我問題?`;
+        renderMessage('huson', [{ text: initialMessage }], true); // isGreeting 設為 true，這樣就不會顯示複製按鈕
     } else {
+        // 如果有歷史紀錄，就全部重新渲染出來
         history.forEach(message => {
             renderMessage(message.role, message.parts, message.isGreeting);
         });
@@ -129,10 +129,14 @@ function renderMessage(sender, parts, isGreeting = false) {
             const textElement = document.createElement('div');
             textElement.innerHTML = marked.parse(part.text);
             contentDiv.appendChild(textElement);
-        } else if (part.inline_data || part.originalUrl) {
+        } else if (part.originalUrl) { // 前端顯示用
             const imgNode = document.createElement('img');
-            imgNode.src = part.originalUrl || `data:${part.inline_data.mime_type};base64,${part.inline_data.data}`;
+            imgNode.src = part.originalUrl;
             contentDiv.appendChild(imgNode);
+        } else if (part.inline_data) { // 從歷史紀錄渲染用
+             const imgNode = document.createElement('img');
+             imgNode.src = `data:${part.inline_data.mime_type};base64,${part.inline_data.data}`;
+             contentDiv.appendChild(imgNode);
         }
     });
     
@@ -180,7 +184,7 @@ async function handleUserRequest() {
     
     const thinkingMessage = document.createElement('div');
     thinkingMessage.classList.add('message', 'huson-message');
-    thinkingMessage.innerText = '正在思考';
+    thinkingMessage.innerText = '我想一下';
     chatWindow.appendChild(thinkingMessage);
     chatWindow.scrollTop = chatWindow.scrollHeight;
 
@@ -205,7 +209,7 @@ async function handleUserRequest() {
     } catch (error) {
         console.error("出錯了:", error);
         chatWindow.removeChild(thinkingMessage);
-        renderMessage('huson', [{ text: "API 好像掛了" }]);
+        renderMessage('huson', [{ text: "API 好像掛了。" }]);
     } finally {
         toggleInput(false);
     }
@@ -221,7 +225,7 @@ if (SpeechRecognition) {
     recognition.interimResults = true;
     micBtn.addEventListener('click', () => { if (!isListening) { recognition.start(); } else { recognition.stop(); } });
     recognition.onstart = () => { isListening = true; micBtn.classList.add('listening'); userInput.placeholder = '正在聽你講話，請說...'; };
-    recognition.onend = () => { isListening = false; micBtn.classList.remove('listening'); userInput.placeholder = '講話啊，或打字啦'; };
+    recognition.onend = () => { isListening = false; micBtn.classList.remove('listening'); userInput.placeholder = '問我問題或上傳圖片'; };
     recognition.onresult = (event) => {
         let interimTranscript = '';
         let finalTranscript = '';
