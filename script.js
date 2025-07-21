@@ -28,10 +28,11 @@ let chatHistories = {
 
 // --- 你的更新資訊 ---
 const latestUpdate = {
-    version: '2.0.5', // 我幫你升一版，代表這是修復版
-    title: 'Huson-AI 2.0.5 穩定性更新',
-    content: `* **修正**：修復了切換模型後，傳送第一則訊息會導致 API 錯誤的智障問題。`,
-    imageSrc: '',
+    version: '2.1.1', // UI 大改版，升一版
+    title: 'Huson-AI 2.1.0 介面刷新',
+    content: `* **重大更新**：整體 UI 介面重新設計，變得更潮了。
+               * 新增了訊息動畫、按鈕效果，還有新的「思考中」動畫。`,
+    imageSrc: '', // 你可以放更新相關的圖片網址
     privacyPolicyUrl: 'privacy.html'
 };
 
@@ -98,7 +99,6 @@ function toggleInput(disabled) {
     modelSelector.disabled = disabled;
 }
 
-// ★★★ Bug 修正就在這個函式裡 ★★★
 function loadConversation(modelName) {
     const selectedOption = modelSelector.querySelector(`option[value="${modelName}"]`);
     versionTitle.innerText = selectedOption.innerText;
@@ -106,11 +106,9 @@ function loadConversation(modelName) {
     const history = chatHistories[modelName];
 
     if (history.length === 0) {
-        // 如果這個模型的對話是空的，只顯示問候語，**不要**把它存到歷史紀錄裡
-        const initialMessage = `我是 Huson，目前使用 ${selectedOption.innerText} 模型。請問我問題?`;
-        renderMessage('huson', [{ text: initialMessage }], true); // isGreeting 設為 true，這樣就不會顯示複製按鈕
+        const initialMessage = `我是 Huson，目前使用 ${selectedOption.innerText} 模型。有什麼問題？`;
+        renderMessage('huson', [{ text: initialMessage }], true);
     } else {
-        // 如果有歷史紀錄，就全部重新渲染出來
         history.forEach(message => {
             renderMessage(message.role, message.parts, message.isGreeting);
         });
@@ -129,11 +127,11 @@ function renderMessage(sender, parts, isGreeting = false) {
             const textElement = document.createElement('div');
             textElement.innerHTML = marked.parse(part.text);
             contentDiv.appendChild(textElement);
-        } else if (part.originalUrl) { // 前端顯示用
+        } else if (part.originalUrl) {
             const imgNode = document.createElement('img');
             imgNode.src = part.originalUrl;
             contentDiv.appendChild(imgNode);
-        } else if (part.inline_data) { // 從歷史紀錄渲染用
+        } else if (part.inline_data) {
              const imgNode = document.createElement('img');
              imgNode.src = `data:${part.inline_data.mime_type};base64,${part.inline_data.data}`;
              contentDiv.appendChild(imgNode);
@@ -146,13 +144,13 @@ function renderMessage(sender, parts, isGreeting = false) {
         const copyBtn = document.createElement('button');
         copyBtn.className = 'copy-btn';
         copyBtn.title = '複製內文';
-        const copyIcon = `<svg viewBox="0 0 24 24"><path fill="currentColor" d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z" /></svg>`;
-        const checkIcon = `<svg viewBox="0 0 24 24"><path fill="currentColor" d="M21,7L9,19L3.5,13.5L4.91,12.09L9,16.17L19.59,5.59L21,7Z" /></svg>`;
-        copyBtn.innerHTML = copyIcon;
+        copyBtn.innerHTML = `<img src="copy.svg" alt="複製">`;
+        const checkIconHtml = `<img src="tick.svg" alt="已複製">`;
+        
         copyBtn.addEventListener('click', () => {
             navigator.clipboard.writeText(contentDiv.innerText).then(() => {
-                copyBtn.innerHTML = checkIcon;
-                setTimeout(() => { copyBtn.innerHTML = copyIcon; }, 1500);
+                copyBtn.innerHTML = checkIconHtml;
+                setTimeout(() => { copyBtn.innerHTML = `<img src="copy.svg" alt="複製">`; }, 1500);
             }).catch(err => console.error('複製失敗:', err));
         });
         messageContainer.appendChild(copyBtn);
@@ -171,6 +169,11 @@ async function handleUserRequest() {
     const userPartsForDisplay = [];
     if (userText) userPartsForDisplay.push({ text: userText });
     if (attachedImage) userPartsForDisplay.push({ originalUrl: attachedImage.originalUrl });
+    
+    if (chatHistories[currentModel].length === 0) {
+        const greetingMessage = chatWindow.querySelector('.huson-message');
+        if (greetingMessage) greetingMessage.remove();
+    }
     renderMessage('user', userPartsForDisplay);
     
     const userPartsForApi = [];
@@ -184,7 +187,13 @@ async function handleUserRequest() {
     
     const thinkingMessage = document.createElement('div');
     thinkingMessage.classList.add('message', 'huson-message');
-    thinkingMessage.innerText = '我想一下';
+    thinkingMessage.innerHTML = `
+        <div class="thinking-indicator">
+            <div class="dot"></div>
+            <div class="dot"></div>
+            <div class="dot"></div>
+        </div>
+    `;
     chatWindow.appendChild(thinkingMessage);
     chatWindow.scrollTop = chatWindow.scrollHeight;
 
@@ -198,7 +207,10 @@ async function handleUserRequest() {
             }),
         });
 
-        if (!response.ok) throw new Error(`伺服器出包了，代碼：${response.status}`);
+        if (!response.ok) {
+             const errorData = await response.json().catch(() => ({text: `伺服器回傳 ${response.status}，而且連內容都讀不到`}));
+             throw new Error(errorData.text || `伺服器錯誤 ${response.status}`);
+        }
         const data = await response.json();
         const husonResponse = data.text;
         chatHistories[currentModel].push({ role: 'model', parts: [{ text: husonResponse }] });
@@ -209,7 +221,7 @@ async function handleUserRequest() {
     } catch (error) {
         console.error("出錯了:", error);
         chatWindow.removeChild(thinkingMessage);
-        renderMessage('huson', [{ text: "API 好像掛了。" }]);
+        renderMessage('huson', [{ text: `API 好像掛了。錯誤：${error.message}` }]);
     } finally {
         toggleInput(false);
     }
@@ -225,7 +237,7 @@ if (SpeechRecognition) {
     recognition.interimResults = true;
     micBtn.addEventListener('click', () => { if (!isListening) { recognition.start(); } else { recognition.stop(); } });
     recognition.onstart = () => { isListening = true; micBtn.classList.add('listening'); userInput.placeholder = '正在聽你講話，請說...'; };
-    recognition.onend = () => { isListening = false; micBtn.classList.remove('listening'); userInput.placeholder = '問我問題或上傳圖片'; };
+    recognition.onend = () => { isListening = false; micBtn.classList.remove('listening'); userInput.placeholder = '說話或打字'; };
     recognition.onresult = (event) => {
         let interimTranscript = '';
         let finalTranscript = '';
@@ -234,7 +246,7 @@ if (SpeechRecognition) {
         }
         userInput.value = finalTranscript || interimTranscript;
     };
-    recognition.onerror = (event) => { console.error('語音辨識錯誤:', event.error); alert(`語音辨識出錯了，錯誤類型: ${event.error}`); };
+    recognition.onerror = (event) => { console.error('語音辨識錯誤:', event.error); alert(`語音辨識出錯了。錯誤類型: ${event.error}`); };
 } else {
     console.log("你的瀏覽器不支援語音辨識啦。");
     micBtn.style.display = 'none';

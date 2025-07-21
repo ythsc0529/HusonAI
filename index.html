@@ -5,67 +5,19 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Huson AI</title>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; background-color: #ffffff; color: #1f2937; margin: 0; display: flex; flex-direction: column; height: 100vh; }
-        header { 
-            background-color: #007bff; color: #ffffff; text-align: center; padding: 10px 0; 
-            font-weight: bold; font-size: 20px; flex-shrink: 0;
-            display: flex; justify-content: center; align-items: center;
-        }
-        #chat-window { flex-grow: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; background-color: #f4f5f7; }
-        .message { max-width: 75%; padding: 10px 15px; border-radius: 18px; margin-bottom: 10px; line-height: 1.6; word-wrap: break-word; position: relative; }
-        .user-message { background-color: #007bff; color: white; align-self: flex-end; border-bottom-right-radius: 4px; }
-        .huson-message { background-color: #e9ecef; color: #1f2937; align-self: flex-start; border-bottom-left-radius: 4px; }
-        .copy-btn { position: absolute; bottom: 8px; right: 10px; background: none; border: none; cursor: pointer; padding: 5px; opacity: 0.3; transition: opacity 0.2s; }
-        .huson-message:hover .copy-btn { opacity: 1; }
-        .copy-btn svg { width: 16px; height: 16px; color: #555; }
-        .huson-message p { margin: 0 0 10px 0; padding-right: 25px; }
-        .huson-message p:last-child { margin-bottom: 0; }
-        .huson-message table { border-collapse: collapse; width: 100%; margin: 10px 0; max-width: calc(100% - 25px); }
-        .huson-message th, .huson-message td { border: 1px solid #ccc; padding: 8px; text-align: left; }
-        .huson-message th { background-color: #f2f2f2; }
-        .huson-message code { background-color: #d1d5db; padding: 2px 5px; border-radius: 4px; font-family: 'Courier New', Courier, monospace; }
-        .huson-message pre { background-color: #d1d5db; padding: 10px; border-radius: 5px; overflow-x: auto; max-width: calc(100% - 25px); }
-        .user-message img { max-width: 200px; max-height: 200px; border-radius: 5px; margin-top: 5px; }
-        #input-container { padding: 10px; border-top: 1px solid #e5e7eb; background-color: #ffffff; flex-shrink: 0; }
-        #image-preview-container { margin-bottom: 10px; display: none; position: relative; width: 80px; }
-        #image-preview { max-width: 80px; max-height: 80px; border-radius: 5px; }
-        #clear-image-button { position: absolute; top: -5px; right: -5px; background: black; color: white; border: none; border-radius: 50%; width: 20px; height: 20px; cursor: pointer; font-weight: bold; line-height: 20px; text-align: center; }
-        #input-area { display: flex; align-items: center; }
-        #file-input-label { cursor: pointer; padding: 8px; }
-        #file-input { display: none; }
-        .icon { width: 24px; height: 24px; }
-        #userInput { flex-grow: 1; padding: 10px; border-radius: 20px; border: 1px solid #d1d5db; background: #ffffff; color: #1f2937; font-size: 16px; margin: 0 10px; }
-        #sendButton { width: 40px; height: 40px; border: none; border-radius: 50%; background-color: #007bff; color: white; cursor: pointer; font-size: 20px; display: flex; justify-content: center; align-items: center; flex-shrink: 0; }
-        #mic-btn { background: none; border: none; cursor: pointer; padding: 8px; }
-        #mic-btn.listening svg { color: #d9534f; }
-        input:disabled, button:disabled { background-color: #e9ecef; cursor: not-allowed; opacity: 0.7; }
-        footer { font-size: 0.8em; color: #777; text-align: center; padding: 10px; background-color: #ffffff; flex-shrink: 0; }
-        #overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.6); z-index: 999; }
-        #update-notification { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background-color: #fff; border: 1px solid #ccc; padding: 25px; border-radius: 10px; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2); z-index: 1000; width: 90%; max-width: 500px; }
-        #update-notification h3 { margin-top: 0; color: #007bff; }
-        #update-notification #update-content { margin: 15px 0; line-height: 1.6; }
-        #update-notification #update-image { max-width: 100%; max-height: 200px; border-radius: 5px; margin-top: 10px; display: block; margin-left: auto; margin-right: auto; }
-        #update-buttons { display: flex; justify-content: flex-end; margin-top: 20px; }
-        #update-buttons button { padding: 8px 15px; border-radius: 5px; cursor: pointer; font-weight: bold; }
-        #privacy-policy-button { margin-right: 10px; border: 1px solid #007bff; background-color: transparent; color: #007bff; }
-        #close-notification { background-color: #007bff; color: white; border: none; }
-        #model-selector { margin-left: 15px; padding: 5px; border-radius: 5px; border: 1px solid #fff; background-color: #0056b3; color: white; font-size: 14px; }
-        #model-selector:focus { outline: none; }
-    </style>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <header>
         <span>Huson-AI <span id="version-title" style="font-size: 0.7em;"></span></span>
         <select id="model-selector">
-            <option value="gemini-2.0-flash">2.0 mini</option>
+            <option value="gemini-2.0-flash">2.0</option>
             <option value="gemini-2.5-flash">2.5</option>
         </select>
     </header>
 
     <div id="overlay"></div>
-    <div id="update-notification">
-        <h3 id="update-title"></h3>
+    <div id="update-notification"> <h3 id="update-title"></h3>
         <div id="update-content"></div>
         <img id="update-image" src="" alt="Update image">
         <div id="update-buttons">
@@ -77,20 +29,27 @@
     <div id="chat-window"></div>
 
     <div id="input-container">
-        <div id="image-preview-container">
+        <div id="image-preview-container" style="display: none;">
             <img id="image-preview" src="" alt="Image preview">
-            <button id="clear-image-button">×</button>
+            <button id="clear-image-button">
+                <img src="cross.svg" alt="清除圖片" style="width: 12px; height: 12px;">
+            </button>
         </div>
         <div id="input-area">
-            <label for="file-input" id="file-input-label">
-                <svg class="icon" viewBox="0 0 24 24"><path fill="currentColor" d="M16.5,6V17.5A4,4 0 0,1 12.5,21.5A4,4 0 0,1 8.5,17.5V5A2.5,2.5 0 0,1 11,2.5A2.5,2.5 0 0,1 13.5,5V15.5A1,1 0 0,1 12.5,16.5A1,1 0 0,1 11.5,15.5V6H10V15.5A2.5,2.5 0 0,0 12.5,18A2.5,2.5 0 0,0 15,15.5V5A4,4 0 0,0 11,1A4,4 0 0,0 7,5V17.5A5.5,5.5 0 0,0 12.5,23A5.5,5.5 0 0,0 18,17.5V6H16.5Z"></path></svg>
+            <label for="file-input" class="input-btn">
+                <img src="picture.svg" alt="上傳圖片">
             </label>
-            <input type="file" id="file-input" accept="image/*">
-            <button id="mic-btn" title="語音輸入">
-                <svg class="icon" viewBox="0 0 24 24"><path fill="currentColor" d="M12,14A3,3 0 0,0 15,11V5A3,3 0 0,0 12,2A3,3 0 0,0 9,5V11A3,3 0 0,0 12,14M17.3,11C17.3,14.39 14.76,17.1 11.5,17.1C8.24,17.1 5.7,14.39 5.7,11H4V11A8,8 0 0,0 11.5,18.82V22H12.5V18.82A8,8 0 0,0 20,11H18.3Z"></path></svg>
+            <input type="file" id="file-input" style="display: none;">
+            
+            <button id="mic-btn" class="input-btn">
+                <img src="microphone.svg" alt="語音輸入">
             </button>
-            <input type="text" id="userInput" placeholder="問我問題或上傳圖片">
-            <button id="sendButton">➤</button>
+            
+            <input type="text" id="userInput" placeholder="講話啊，或打字啦">
+            
+            <button id="sendButton" class="input-btn">
+                <img src="send.svg" alt="傳送">
+            </button>
         </div>
     </div>
     
