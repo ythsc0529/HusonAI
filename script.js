@@ -9,6 +9,9 @@ const clearImageButton = document.getElementById('clear-image-button');
 const micBtn = document.getElementById('mic-btn');
 const modelSelector = document.getElementById('model-selector');
 const versionTitle = document.getElementById('version-title');
+const lightboxOverlay = document.getElementById('lightbox-overlay');
+const lightboxImage = document.getElementById('lightbox-image');
+const lightboxClose = document.getElementById('lightbox-close');
 const updateNotification = document.getElementById('update-notification');
 const updateTitle = document.getElementById('update-title');
 const updateContent = document.getElementById('update-content');
@@ -23,16 +26,17 @@ let isListening = false;
 let currentModel = modelSelector.value;
 let chatHistories = {
     'gemini-2.0-flash': [],
-    'gemini-2.5-flash': []
+    'gemini-2.5-flash': [],
+    'HusonGen1': []
 };
 
 // --- 你的更新資訊 ---
 const latestUpdate = {
-    version: '2.1.1', // UI 大改版，升一版
-    title: 'Huson-AI 2.1.0 介面刷新',
-    content: `* **重大更新**：整體 UI 介面重新設計，變得更潮了。
-               * 新增了訊息動畫、按鈕效果，還有新的「思考中」動畫。`,
-    imageSrc: '', // 你可以放更新相關的圖片網址
+    version: '2.3.0',
+    title: 'Huson-AI 2.3.0 圖片體驗升級',
+    content: `* **新功能**：現在聊天室裡的所有圖片都可以點擊放大預覽了！
+               * **更名**：圖像生成模型現在正式命名為 HusonGen1。`,
+    imageSrc: '',
     privacyPolicyUrl: 'privacy.html'
 };
 
@@ -89,6 +93,20 @@ function clearAttachedImage() {
 
 clearImageButton.addEventListener('click', clearAttachedImage);
 
+// --- 圖片燈箱 ---
+chatWindow.addEventListener('click', (event) => {
+    if (event.target.tagName === 'IMG') {
+        lightboxImage.src = event.target.src;
+        lightboxOverlay.style.display = 'flex';
+    }
+});
+function closeLightbox() {
+    lightboxOverlay.style.display = 'none';
+    lightboxImage.src = '';
+}
+lightboxOverlay.addEventListener('click', closeLightbox);
+lightboxClose.addEventListener('click', closeLightbox);
+
 // --- 核心聊天功能 ---
 function toggleInput(disabled) {
     userInput.disabled = disabled;
@@ -106,7 +124,7 @@ function loadConversation(modelName) {
     const history = chatHistories[modelName];
 
     if (history.length === 0) {
-        const initialMessage = `我是 Huson，目前使用 ${selectedOption.innerText} 模型。有什麼問題？`;
+        const initialMessage = `我是 Huson，目前使用 ${selectedOption.innerText}。有什麼問題？`;
         renderMessage('huson', [{ text: initialMessage }], true);
     } else {
         history.forEach(message => {
@@ -119,7 +137,6 @@ function renderMessage(sender, parts, isGreeting = false) {
     const role = (sender === 'user') ? 'user' : 'huson';
     const messageContainer = document.createElement('div');
     messageContainer.classList.add('message', `${role}-message`);
-
     const contentDiv = document.createElement('div');
     
     parts.forEach(part => {
@@ -131,9 +148,11 @@ function renderMessage(sender, parts, isGreeting = false) {
             const imgNode = document.createElement('img');
             imgNode.src = part.originalUrl;
             contentDiv.appendChild(imgNode);
-        } else if (part.inline_data) {
+        } else if (part.inline_data || part.image) {
              const imgNode = document.createElement('img');
-             imgNode.src = `data:${part.inline_data.mime_type};base64,${part.inline_data.data}`;
+             const imageData = part.image || part.inline_data.data;
+             const mimeType = part.mimeType || part.inline_data.mime_type || 'image/png';
+             imgNode.src = `data:${mimeType};base64,${imageData}`;
              contentDiv.appendChild(imgNode);
         }
     });
@@ -147,7 +166,8 @@ function renderMessage(sender, parts, isGreeting = false) {
         copyBtn.innerHTML = `<img src="copy.svg" alt="複製">`;
         const checkIconHtml = `<img src="tick.svg" alt="已複製">`;
         
-        copyBtn.addEventListener('click', () => {
+        copyBtn.addEventListener('click', (e) => {
+            e.stopPropagation(); // 防止點複製的時候觸發圖片放大
             navigator.clipboard.writeText(contentDiv.innerText).then(() => {
                 copyBtn.innerHTML = checkIconHtml;
                 setTimeout(() => { copyBtn.innerHTML = `<img src="copy.svg" alt="複製">`; }, 1500);
@@ -187,13 +207,7 @@ async function handleUserRequest() {
     
     const thinkingMessage = document.createElement('div');
     thinkingMessage.classList.add('message', 'huson-message');
-    thinkingMessage.innerHTML = `
-        <div class="thinking-indicator">
-            <div class="dot"></div>
-            <div class="dot"></div>
-            <div class="dot"></div>
-        </div>
-    `;
+    thinkingMessage.innerHTML = `<div class="thinking-indicator"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>`;
     chatWindow.appendChild(thinkingMessage);
     chatWindow.scrollTop = chatWindow.scrollHeight;
 
@@ -212,11 +226,17 @@ async function handleUserRequest() {
              throw new Error(errorData.text || `伺服器錯誤 ${response.status}`);
         }
         const data = await response.json();
-        const husonResponse = data.text;
-        chatHistories[currentModel].push({ role: 'model', parts: [{ text: husonResponse }] });
+        
+        const newPartsForHistory = [];
+        if (data.text) newPartsForHistory.push({ text: data.text });
+        if (data.image) newPartsForHistory.push({ inline_data: { data: data.image, mime_type: 'image/png' } });
+        
+        if (newPartsForHistory.length > 0) {
+            chatHistories[currentModel].push({ role: 'model', parts: newPartsForHistory });
+        }
 
         chatWindow.removeChild(thinkingMessage);
-        renderMessage('huson', [{ text: husonResponse }]);
+        renderMessage('huson', newPartsForHistory);
         
     } catch (error) {
         console.error("出錯了:", error);
@@ -237,7 +257,7 @@ if (SpeechRecognition) {
     recognition.interimResults = true;
     micBtn.addEventListener('click', () => { if (!isListening) { recognition.start(); } else { recognition.stop(); } });
     recognition.onstart = () => { isListening = true; micBtn.classList.add('listening'); userInput.placeholder = '正在聽你講話，請說...'; };
-    recognition.onend = () => { isListening = false; micBtn.classList.remove('listening'); userInput.placeholder = '說話或打字'; };
+    recognition.onend = () => { isListening = false; micBtn.classList.remove('listening'); userInput.placeholder = '請講話或打字'; };
     recognition.onresult = (event) => {
         let interimTranscript = '';
         let finalTranscript = '';
