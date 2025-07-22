@@ -21,15 +21,33 @@ exports.handler = async function (event) {
 
         if (modelIdentifier === 'HusonGen1') {
             // --- 畫圖模式 ---
-            const actualModelName = 'gemini-2.0-flash-preview-image-generation'; // ★★★ 使用 Google 真正認得的模型名稱 ★★★
+            const actualModelName = 'gemini-2.0-flash-preview-image-generation';
             console.log(`進入畫圖模式，實際使用模型: ${actualModelName}`);
 
-            const model = genAI.getGenerativeModel({ model: actualModelName, systemInstruction: systemInstruction });
+            const model = genAI.getGenerativeModel({ model: actualModelName });
 
+            // ★★★ 核心修正：完全依照官方文件重新建構請求內容 (contents) ★★★
             const lastUserMessage = history[history.length - 1];
+            let contentsPayload;
+
+            // 判斷是「純文字」還是「圖+文」
+            const hasText = lastUserMessage.parts.some(p => p.text);
+            const hasImage = lastUserMessage.parts.some(p => p.inline_data);
+
+            if (hasText && !hasImage) {
+                // 純文字生圖
+                contentsPayload = lastUserMessage.parts[0].text;
+            } else {
+                // 圖+文編輯 或 純圖 prompt
+                contentsPayload = lastUserMessage.parts;
+            }
+
             const result = await model.generateContent({
-                contents: [ { role: 'user', parts: lastUserMessage.parts } ],
-                generationConfig: { responseMimeType: "application/json" },
+                contents: contentsPayload,
+                // ★★★ 核心修正：使用 config 和 responseModalities，而不是 generationConfig ★★★
+                config: {
+                    responseModalities: ["TEXT", "IMAGE"],
+                },
             });
             
             const response = result.response;
@@ -41,10 +59,16 @@ exports.handler = async function (event) {
                 if (part.text) responseText = part.text;
                 else if (part.inlineData) responseImage = part.inlineData.data;
             }
+
+            // 確保至少有回傳一個東西，不然前端會壞掉
+            if (!responseText && !responseImage) {
+                responseText = "不知道為什麼，這次沒畫成功也沒話可說。你換個方式再試一次。";
+            }
+
             return { statusCode: 200, body: JSON.stringify({ text: responseText, image: responseImage }) };
 
         } else {
-            // --- 聊天模式 ---
+            // --- 聊天模式 (維持不變) ---
             const actualModelName = modelIdentifier || 'gemini-2.0-flash';
             console.log(`進入聊天模式，實際使用模型: ${actualModelName}`);
 
@@ -57,10 +81,10 @@ exports.handler = async function (event) {
         }
 
     } catch (error) {
-        console.error("幹，Gemini API 出錯了:", error);
+        console.error("API 出錯了:", error);
         if (error.status === 503 || (error.message && error.message.includes("overloaded"))) {
             return { statusCode: 503, body: JSON.stringify({ text: `幹，` + (modelIdentifier || '這個') + ` 模型現在太忙了，跟當機沒兩樣。你換個模型或晚點再試。` }) };
         }
-        return { statusCode: 500, body: JSON.stringify({ text: "哇操，API 炸了，我也不知道三小狀況。" }) };
+        return { statusCode: 500, body: JSON.stringify({ text: "API 炸了，我也不知道狀況。" }) };
     }
 };
