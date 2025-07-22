@@ -27,7 +27,7 @@ let currentModel = modelSelector.value;
 let chatHistories = {
     'gemini-2.0-flash': [],
     'gemini-2.5-flash': [],
-    'HusonGen1': []
+    'gemini-2.0-flash-preview-image-generation': []
 };
 
 // --- 你的更新資訊 ---
@@ -41,11 +41,16 @@ const latestUpdate = {
 };
 
 // --- 頁面載入時執行 ---
+// --- 頁面載入時執行 ---
 window.onload = () => {
-    const lastSeenVersion = localStorage.getItem('husonAiVersion');
-    if (lastSeenVersion !== latestUpdate.version) {
-        displayUpdateNotification(latestUpdate);
-    }
+    // const lastSeenVersion = localStorage.getItem('husonAiVersion');
+    // if (lastSeenVersion !== latestUpdate.version) {
+    //     displayUpdateNotification(latestUpdate);
+    // }
+
+    // ★★★ 直接呼叫，強制每次都顯示 ★★★
+    displayUpdateNotification(latestUpdate);
+    
     loadConversation(currentModel);
 };
 
