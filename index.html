@@ -9,13 +9,31 @@
 </head>
 <body>
     <header>
-        <span>Huson-AI <span id="version-title" style="font-size: 0.7em;"></span></span>
-        <select id="model-selector">
-            <option value="gemini-2.0-flash">2.0(聊天)</option>
-            <option value="gemini-2.5-flash">2.5(聊天)</option>
-            <option value="gemini-2.0-flash-preview-image-generation">HusonGen1(畫圖)</option>
-        </select>
+        <div class="header-left"></div> <div class="header-center">
+            <span>Huson-AI <span id="version-title" style="font-size: 0.7em;"></span></span>
+            <select id="model-selector">
+                <option value="gemini-2.0-flash">2.0 (聊天)</option>
+                <option value="gemini-2.5-flash">2.5 (聊天)</option>
+                <option value="HusonGen1">HusonGen1 (畫圖)</option>
+            </select>
+        </div>
+        <div class="header-right">
+            <button id="settings-btn" class="input-btn">
+                <img src="settings.svg" alt="設定">
+            </button>
+        </div>
     </header>
+
+    <div id="settings-panel">
+        <h3>自訂外觀</h3>
+        <p>選一個你喜歡的顏色。</p>
+        <div id="theme-swatches">
+            <div class="swatch" data-theme="theme-teal" style="background-color: #08d9d6;"></div>
+            <div class="swatch" data-theme="theme-purple" style="background-color: #9b59b6;"></div>
+            <div class="swatch" data-theme="theme-orange" style="background-color: #e67e22;"></div>
+            <div class="swatch" data-theme="theme-pink" style="background-color: #ff2e63;"></div>
+        </div>
+    </div>
 
     <div id="overlay"></div>
     <div id="update-notification">
