@@ -1,82 +1,50 @@
 <!DOCTYPE html>
-<html lang="zh-Hant">
+<html lang="zh-Hant-TW">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Huson AI</title>
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <title>HusonAI</title>
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 </head>
 <body>
-    <header>
-        <div class="header-left"></div> <div class="header-center">
-            <span>Huson-AI <span id="version-title" style="font-size: 0.7em;"></span></span>
-            <select id="model-selector">
-                <option value="gemini-2.0-flash">2.0</option>
-                <option value="gemini-2.5-flash" selected>2.5</option>
-                <option value="gemini-2.0-flash-preview-image-generation">HusonGen1</option>
-            </select>
-        </div>
-        <div class="header-right">
-            <button id="settings-btn" class="input-btn">
-                <img src="settings.svg" alt="設定">
-            </button>
-        </div>
-    </header>
+    <div class="container">
+        <header>
+            <h1>HusonAI 🤖</h1>
+            <div class="model-selector">
+                <label>
+                    <input type="radio" name="model" value="2.5" checked> Huson 2.5
+                </label>
+                <label>
+                    <input type="radio" name="model" value="2.0"> Huson 2.0
+                </label>
+            </div>
+        </header>
 
-    <div id="settings-panel">
-        <h3>自訂外觀</h3>
-        <p>選一個你喜歡的顏色。</p>
-        <div id="theme-swatches">
-            <div class="swatch" data-theme="theme-teal" style="background-color: #08d9d6;"></div>
-            <div class="swatch" data-theme="theme-purple" style="background-color: #9b59b6;"></div>
-            <div class="swatch" data-theme="theme-orange" style="background-color: #e67e22;"></div>
-            <div class="swatch" data-theme="theme-pink" style="background-color: #ff2e63;"></div>
+        <div class="chat-window" id="chat-window">
+            <div class="message ai-message">
+                <div class="avatar">H</div>
+                <div class="text-content" id="initial-message">哈囉！哇係 Huson！😎 <br>由高雄帥哥黃士禎設計的啦～有啥問題儘管問，我隨時奉陪！</div>
+            </div>
         </div>
-    </div>
 
-    <div id="overlay"></div>
-    <div id="update-notification">
-        <h3 id="update-title"></h3>
-        <div id="update-content"></div>
-        <img id="update-image" src="" alt="Update image">
-        <div id="update-buttons">
-            <button id="privacy-policy-button">隱私權政策</button>
-            <button id="close-notification">關閉</button>
-        </div>
-    </div>
+        <div id="image-preview-container"></div>
 
-    <div id="chat-window"></div>
-
-    <div id="input-container">
-        <div id="image-preview-container" style="display: none;">
-            <img id="image-preview" src="" alt="Image preview">
-            <button id="clear-image-button">
-                <img src="cross.svg" alt="清除圖片" style="width: 12px; height: 12px;">
-            </button>
-        </div>
-        <div id="input-area">
-            <label for="file-input" class="input-btn">
-                <img src="picture.svg" alt="上傳圖片">
+        <div class="chat-input-area">
+            <button id="voice-input-btn" class="icon-btn" title="語音輸入"><i class="fas fa-microphone"></i></button>
+            <textarea id="message-input" placeholder="來尬聊啊..."></textarea>
+            <label for="image-upload-input" class="icon-btn" title="上傳圖片">
+                <i class="fas fa-paperclip"></i>
             </label>
-            <input type="file" id="file-input" style="display: none;">
-            <button id="mic-btn" class="input-btn">
-                <img src="microphone.svg" alt="語音輸入">
-            </button>
-            <input type="text" id="userInput" placeholder="講話啊，或叫我畫圖啊">
-            <button id="sendButton" class="input-btn">
-                <img src="send.svg" alt="傳送">
-            </button>
+            <input type="file" id="image-upload-input" accept="image/*" style="display: none;">
+            <button id="send-btn" class="icon-btn send"><i class="fas fa-paper-plane"></i></button>
+        </div>
+         <div class="footer">
+            <p>Designed by <a href="https://www.instagram.com/sz_jhen_/" target="_blank">黃士禎</a> with 💛</p>
         </div>
     </div>
-    
-    <footer>AI提供資訊可能有誤，請勿全然相信</footer>
 
-    <div id="lightbox-overlay">
-        <span id="lightbox-close">&times;</span>
-        <img id="lightbox-image" src="" alt="放大的圖片">
-    </div>
-
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="script.js"></script>
 </body>
 </html>

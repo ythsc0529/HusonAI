@@ -1,2 +1,9 @@
-[functions."*"]
-  timeout = 25
+[build]
+  # 前端檔案所在的資料夾
+  publish = "."
+  # 後端 Serverless Functions 所在的資料夾
+  functions = "netlify/functions"
+
+[functions]
+  # 增加函式的超時時間，避免 AI 回應太久被中斷
+  timeout = 60
