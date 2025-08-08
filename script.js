@@ -1,13 +1,25 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // 取得所有需要的 HTML 元素
+    // 頁面元素
+    const selectionPage = document.getElementById('selection-page');
+    const chatPage = document.getElementById('chat-page');
+    const selectionCards = document.querySelectorAll('.selection-card');
+    const backBtn = document.getElementById('back-to-selection-btn');
+
+    // 聊天頁面元素
     const chatWindow = document.getElementById('chat-window');
     const messageInput = document.getElementById('message-input');
     const sendBtn = document.getElementById('send-btn');
     const voiceInputBtn = document.getElementById('voice-input-btn');
     const imageUploadInput = document.getElementById('image-upload-input');
     const imagePreviewContainer = document.getElementById('image-preview-container');
+    const chatTitle = document.getElementById('chat-title');
 
-    // 初始化 Web Speech API
+    // 全域變數
+    let currentChatId = null; // e.g., 'huson2.5', 'huson2.0', 'studio'
+    let conversationHistory = [];
+    let imageData = { mimeType: '', base64: '' };
+
+    // 初始化語音辨識
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     let recognition;
     if (SpeechRecognition) {
@@ -18,78 +30,141 @@ document.addEventListener('DOMContentLoaded', () => {
         recognition.maxAlternatives = 1;
     } else {
         voiceInputBtn.style.display = 'none';
-        console.log('你的瀏覽器不支援語音辨識喔～');
     }
 
-    // 對話歷史紀錄，用來傳給 AI 參考上下文
-    let conversationHistory = [];
-    let imageData = {
-        mimeType: '',
-        base64: ''
+    // ===== 頁面導航邏輯 =====
+
+    selectionCards.forEach(card => {
+        card.addEventListener('click', () => {
+            currentChatId = card.dataset.chat;
+            loadChat(currentChatId);
+            selectionPage.classList.remove('active');
+            chatPage.classList.add('active');
+        });
+    });
+
+    backBtn.addEventListener('click', () => {
+        chatPage.classList.remove('active');
+        selectionPage.classList.add('active');
+        currentChatId = null; // 清空當前聊天 ID
+    });
+
+    // ===== 聊天核心邏輯 =====
+
+    const loadChat = (chatId) => {
+        // 1. 設定聊天室標題
+        const titles = {
+            'huson2.5': 'Huson 2.5 Flash ⚡️',
+            'huson2.0': 'Huson 2.0 Pro 🧠',
+            'studio': '隨便你工作室 💬'
+        };
+        chatTitle.textContent = titles[chatId];
+        
+        // 2. 清空聊天視窗和輸入
+        chatWindow.innerHTML = '';
+        messageInput.value = '';
+        clearImagePreview();
+        
+        // 3. 從 sessionStorage 載入歷史紀錄
+        const savedHistory = sessionStorage.getItem(`${chatId}_history`);
+        conversationHistory = savedHistory ? JSON.parse(savedHistory) : [];
+
+        // 4. 渲染歷史訊息
+        conversationHistory.forEach(msg => {
+            let text = '';
+            let imageBase64 = null;
+            let imageMimeType = 'image/jpeg'; // default
+            msg.parts.forEach(part => {
+                if(part.text) {
+                    text = part.text;
+                }
+                if(part.inlineData) {
+                    imageBase64 = part.inlineData.data;
+                    imageMimeType = part.inlineData.mimeType;
+                }
+            });
+            appendMessage(msg.role === 'model' ? 'ai' : 'user', text, imageBase64, imageMimeType, false);
+        });
+
+        // 5. 顯示初始歡迎訊息（如果沒有歷史紀錄）
+        if (conversationHistory.length === 0) {
+            const initialMessages = {
+                'huson2.5': '哈囉！我是 Huson 2.5，專門處理複雜問題的。請講！😎',
+                'huson2.0': '你好，我是 Huson 2.0，專門聊天的。請講!。🧐',
+                'studio': '您好，這裡是「隨便你工作室」，請問有什麼可以為您服務的？'
+            };
+            const welcomeText = initialMessages[chatId];
+            appendMessage('ai', welcomeText, null, null, false);
+            // 將歡迎訊息也加入歷史紀錄
+            conversationHistory.push({ role: 'model', parts: [{ text: welcomeText }] });
+            saveHistory();
+        }
+    };
+    
+    const saveHistory = () => {
+        if (currentChatId) {
+            sessionStorage.setItem(`${currentChatId}_history`, JSON.stringify(conversationHistory));
+        }
     };
 
-    // 發送訊息的函式
     const sendMessage = async () => {
         const messageText = messageInput.value.trim();
         const hasImage = imageData.base64 !== '';
         
-        if (messageText === '' && !hasImage) {
-            return;
-        }
+        if (messageText === '' && !hasImage) return;
 
-        // 顯示使用者訊息
-        appendMessage('user', messageText, imageData.base64);
+        appendMessage('user', messageText, imageData.base64, imageData.mimeType);
         
-        // 取得當前選擇的模型
-        const selectedModel = document.querySelector('input[name="model"]:checked').value;
-        
-        // 將使用者訊息加入歷史紀錄
         const userMessageParts = [];
-        if (messageText) {
-            userMessageParts.push({ text: messageText });
-        }
+        if (messageText) userMessageParts.push({ text: messageText });
         if (hasImage) {
             userMessageParts.push({
-                inlineData: {
-                    mimeType: imageData.mimeType,
-                    data: imageData.base64
-                }
+                inlineData: { mimeType: imageData.mimeType, data: imageData.base64 }
             });
         }
         conversationHistory.push({ role: 'user', parts: userMessageParts });
-
-        // 清空輸入框和圖片預覽
+        saveHistory();
+        
         messageInput.value = '';
         clearImagePreview();
 
-        // 顯示 "AI 正在輸入中..." 的動畫
+        // 處理客服模式
+        if (currentChatId === 'studio') {
+            appendTypingIndicator();
+            setTimeout(() => {
+                removeTypingIndicator();
+                const replyText = '已收到您的回覆，我們的團隊將會盡快處理，感謝您的留言！';
+                appendMessage('ai', replyText);
+                conversationHistory.push({ role: 'model', parts: [{ text: replyText }] });
+                saveHistory();
+            }, 800);
+            return;
+        }
+
         appendTypingIndicator();
 
         try {
-            // 呼叫我們的 Netlify Function
+            const modelMap = { 'huson2.5': '2.5', 'huson2.0': '2.0' };
             const response = await fetch('/.netlify/functions/getAiResponse', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     history: conversationHistory,
-                    model: selectedModel
+                    model: modelMap[currentChatId]
                 }),
             });
 
             if (!response.ok) {
                 const errorData = await response.json();
-                throw new Error(errorData.error || `發生錯誤惹，HTTP 狀態碼: ${response.status}`);
+                throw new Error(errorData.error || `HTTP 狀態碼: ${response.status}`);
             }
 
             const data = await response.json();
             const aiResponse = data.response;
 
-            // 將 AI 回應加入歷史紀錄
             conversationHistory.push({ role: 'model', parts: [{ text: aiResponse }] });
+            saveHistory();
             
-            // 移除 "輸入中" 動畫並顯示 AI 回應
             removeTypingIndicator();
             appendMessage('ai', aiResponse);
 
@@ -100,10 +175,16 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
     
-    // 將訊息顯示在聊天視窗的函式
-    const appendMessage = (sender, text, imageBase64 = null) => {
+    // ===== 輔助函式 =====
+
+    const appendMessage = (sender, text, imageBase64 = null, imageMimeType = 'image/jpeg', animate = true) => {
         const messageWrapper = document.createElement('div');
         messageWrapper.classList.add('message', `${sender}-message`);
+        if (!animate) {
+            messageWrapper.style.animation = 'none';
+            messageWrapper.style.opacity = '1';
+            messageWrapper.style.transform = 'translateY(0)';
+        }
 
         const avatar = document.createElement('div');
         avatar.classList.add('avatar');
@@ -115,7 +196,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (sender === 'user') {
             if (imageBase64) {
                 const img = document.createElement('img');
-                img.src = `data:image/jpeg;base64,${imageBase64}`;
+                img.src = `data:${imageMimeType};base64,${imageBase64}`;
                 img.classList.add('uploaded-image');
                 textContent.appendChild(img);
             }
@@ -124,33 +205,27 @@ document.addEventListener('DOMContentLoaded', () => {
                 p.textContent = text;
                 textContent.appendChild(p);
             }
-        } else { // AI message
-            // 使用 marked.js 將 Markdown 轉為 HTML
+        } else {
             textContent.innerHTML = marked.parse(text);
         }
 
         messageWrapper.appendChild(avatar);
         messageWrapper.appendChild(textContent);
         chatWindow.appendChild(messageWrapper);
-        chatWindow.scrollTop = chatWindow.scrollHeight; // 自動滾動到底部
+        chatWindow.scrollTop = chatWindow.scrollHeight;
     };
-
-    // 顯示 "輸入中..."
+    
     const appendTypingIndicator = () => {
         const messageWrapper = document.createElement('div');
         messageWrapper.classList.add('message', 'ai-message', 'typing-indicator-wrapper');
-        
         const avatar = document.createElement('div');
         avatar.classList.add('avatar');
         avatar.textContent = 'H';
-
         const textContent = document.createElement('div');
         textContent.classList.add('text-content');
-        
         const typingIndicator = document.createElement('div');
         typingIndicator.classList.add('typing-indicator');
         typingIndicator.innerHTML = '<span></span><span></span><span></span>';
-        
         textContent.appendChild(typingIndicator);
         messageWrapper.appendChild(avatar);
         messageWrapper.appendChild(textContent);
@@ -158,33 +233,20 @@ document.addEventListener('DOMContentLoaded', () => {
         chatWindow.scrollTop = chatWindow.scrollHeight;
     };
 
-    // 移除 "輸入中..."
     const removeTypingIndicator = () => {
         const indicator = document.querySelector('.typing-indicator-wrapper');
         if (indicator) {
             indicator.remove();
         }
     };
+    
+    const clearImagePreview = () => {
+        imagePreviewContainer.innerHTML = '';
+        imageData.mimeType = '';
+        imageData.base64 = '';
+        imageUploadInput.value = '';
+    };
 
-    // 處理圖片上傳
-    imageUploadInput.addEventListener('change', (event) => {
-        const file = event.target.files[0];
-        if (!file) {
-            return;
-        }
-
-        const reader = new FileReader();
-        reader.onloadend = () => {
-            imageData.mimeType = file.type;
-            // 去掉 base64 字串的 data URI 前綴
-            imageData.base64 = reader.result.split(',')[1];
-            
-            showImagePreview(reader.result);
-        };
-        reader.readAsDataURL(file);
-    });
-
-    // 顯示圖片預覽
     const showImagePreview = (src) => {
         clearImagePreview();
         const img = document.createElement('img');
@@ -192,58 +254,60 @@ document.addEventListener('DOMContentLoaded', () => {
         const removeBtn = document.createElement('button');
         removeBtn.textContent = '×';
         removeBtn.onclick = clearImagePreview;
-        
         imagePreviewContainer.appendChild(img);
         imagePreviewContainer.appendChild(removeBtn);
     };
 
-    // 清除圖片預覽和資料
-    const clearImagePreview = () => {
-        imagePreviewContainer.innerHTML = '';
-        imageData.mimeType = '';
-        imageData.base64 = '';
-        // 重設 file input 的值，這樣才能再次上傳同一個檔案
-        imageUploadInput.value = '';
-    };
-
-    // 處理語音輸入
-    if (recognition) {
-        voiceInputBtn.addEventListener('click', () => {
-            if (voiceInputBtn.classList.contains('recording')) {
-                recognition.stop();
-            } else {
-                recognition.start();
-            }
-        });
-
-        recognition.onstart = () => {
-            voiceInputBtn.classList.add('recording');
+    imageUploadInput.addEventListener('change', (event) => {
+        const file = event.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onloadend = () => {
+            imageData.mimeType = file.type;
+            imageData.base64 = reader.result.split(',')[1];
+            showImagePreview(reader.result);
         };
-
-        recognition.onend = () => {
-            voiceInputBtn.classList.remove('recording');
-        };
-
-        recognition.onresult = (event) => {
-            const transcript = event.results[0][0].transcript;
-            messageInput.value = transcript;
-            // 語音輸入後自動送出
-            sendMessage();
-        };
-
-        recognition.onerror = (event) => {
-            console.error('語音辨識錯誤:', event.error);
-            alert(`語音辨識好像怪怪的：${event.error}`);
-        };
-    }
-
+        reader.readAsDataURL(file);
+    });
+    
     // 監聽事件
     sendBtn.addEventListener('click', sendMessage);
     messageInput.addEventListener('keydown', (e) => {
-        // 按下 Enter 送出，Shift+Enter 換行
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
             sendMessage();
         }
     });
+
+    if (recognition) {
+        voiceInputBtn.addEventListener('click', () => {
+            if (voiceInputBtn.classList.contains('recording')) {
+                recognition.stop();
+            } else {
+                try {
+                    recognition.start();
+                } catch(e) {
+                    console.error("語音辨識啟動失敗", e);
+                    alert("語音辨識無法啟動，可能正在處理上一個請求。");
+                }
+            }
+        });
+        recognition.onstart = () => {
+            voiceInputBtn.classList.add('recording');
+        };
+        recognition.onend = () => {
+            voiceInputBtn.classList.remove('recording');
+        };
+        recognition.onresult = (event) => {
+            const transcript = event.results[0][0].transcript;
+            messageInput.value = transcript;
+            sendMessage();
+        };
+        recognition.onerror = (event) => {
+            console.error('語音辨識錯誤:', event.error);
+            if (event.error !== 'no-speech') {
+                alert(`語音辨識好像怪怪的：${event.error}`);
+            }
+        };
+    }
 });

@@ -3,44 +3,61 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HusonAI</title>
+    <title>HusonAI - 選擇您的助理</title>
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h1>HusonAI</h1>
-            <div class="model-selector">
-                <label>
-                    <input type="radio" name="model" value="2.5" checked> Huson 2.5
-                </label>
-                <label>
-                    <input type="radio" name="model" value="2.0"> Huson 2.0
-                </label>
-            </div>
-        </header>
 
-        <div class="chat-window" id="chat-window">
-            <div class="message ai-message">
-                <div class="avatar">H</div>
-                <div class="text-content" id="initial-message">哈囉！哇係 Huson！😎 <br>由高雄帥哥黃士禎設計的啦～有啥問題儘管問，我隨時奉陪！</div>
-            </div>
+    <div id="selection-page" class="page active">
+        <div class="selection-container">
+            <header class="selection-header">
+                <h1>HusonAI</h1>
+                <p>請選擇您的專屬助理</p>
+            </header>
+            <main class="selection-grid">
+                <div class="selection-card" data-chat="huson2.5">
+                    <div class="card-icon">⚡️</div>
+                    <h2>Huson 2.5</h2>
+                    <p>穩定且強大的專業模型。專精於深度邏輯推理、程式碼生成與較精準的視覺辨識任務。</p>
+                </div>
+
+                <div class="selection-card" data-chat="huson2.0">
+                    <div class="card-icon">🧠</div>
+                    <h2>Huson 2.0</h2>
+                    <p>最新、最快的全能模型。適合創意寫作、複雜問題解答、圖片分析和快速的日常對話。</p>
+                </div>
+
+                <div class="selection-card" data-chat="studio">
+                    <div class="card-icon">💬</div>
+                    <h2>隨便你工作室</h2>
+                    <p>需要專人服務或有任何建議嗎？請在此留言，我們的團隊會盡快與您聯繫。</p>
+                </div>
+            </main>
         </div>
+    </div>
 
-        <div id="image-preview-container"></div>
+    <div id="chat-page" class="page">
+        <div class="container">
+            <header class="chat-header">
+                <button id="back-to-selection-btn" class="back-btn"><i class="fas fa-arrow-left"></i> 返回</button>
+                <h1 id="chat-title">HusonAI</h1>
+            </header>
 
-        <div class="chat-input-area">
-            <button id="voice-input-btn" class="icon-btn" title="語音輸入"><i class="fas fa-microphone"></i></button>
-            <textarea id="message-input" placeholder="來尬聊啊..."></textarea>
-            <label for="image-upload-input" class="icon-btn" title="上傳圖片">
-                <i class="fas fa-paperclip"></i>
-            </label>
-            <input type="file" id="image-upload-input" accept="image/*" style="display: none;">
-            <button id="send-btn" class="icon-btn send"><i class="fas fa-paper-plane"></i></button>
-        </div>
-         <div class="footer">
-            <p>Designed by <a href="https://www.instagram.com/sz_jhen_/" target="_blank">黃士禎</a> with 隨便你工作室</p>
+            <div class="chat-window" id="chat-window">
+                </div>
+
+            <div id="image-preview-container"></div>
+
+            <div class="chat-input-area">
+                <button id="voice-input-btn" class="icon-btn" title="語音輸入"><i class="fas fa-microphone"></i></button>
+                <textarea id="message-input" placeholder="來尬聊啊..."></textarea>
+                <label for="image-upload-input" class="icon-btn" title="上傳圖片">
+                    <i class="fas fa-paperclip"></i>
+                </label>
+                <input type="file" id="image-upload-input" accept="image/*" style="display: none;">
+                <button id="send-btn" class="icon-btn send"><i class="fas fa-paper-plane"></i></button>
+            </div>
         </div>
     </div>
 
