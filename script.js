@@ -54,8 +54,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const loadChat = (chatId) => {
         // 1. 設定聊天室標題
         const titles = {
-            'huson2.5': 'Huson 2.5 Flash ⚡️',
-            'huson2.0': 'Huson 2.0 Pro 🧠',
+            'huson2.5': 'Huson 2.5',
+            'huson2.0': 'Huson 2.0',
             'studio': '隨便你工作室 💬'
         };
         chatTitle.textContent = titles[chatId];
@@ -70,34 +70,31 @@ document.addEventListener('DOMContentLoaded', () => {
         conversationHistory = savedHistory ? JSON.parse(savedHistory) : [];
 
         // 4. 渲染歷史訊息
-        conversationHistory.forEach(msg => {
-            let text = '';
-            let imageBase64 = null;
-            let imageMimeType = 'image/jpeg'; // default
-            msg.parts.forEach(part => {
-                if(part.text) {
-                    text = part.text;
-                }
-                if(part.inlineData) {
-                    imageBase64 = part.inlineData.data;
-                    imageMimeType = part.inlineData.mimeType;
-                }
+        if (conversationHistory.length > 0) {
+            conversationHistory.forEach(msg => {
+                let text = '';
+                let imageBase64 = null;
+                let imageMimeType = 'image/jpeg'; // default
+                msg.parts.forEach(part => {
+                    if(part.text) {
+                        text = part.text;
+                    }
+                    if(part.inlineData) {
+                        imageBase64 = part.inlineData.data;
+                        imageMimeType = part.inlineData.mimeType;
+                    }
+                });
+                appendMessage(msg.role === 'model' ? 'ai' : 'user', text, imageBase64, imageMimeType, false);
             });
-            appendMessage(msg.role === 'model' ? 'ai' : 'user', text, imageBase64, imageMimeType, false);
-        });
-
-        // 5. 顯示初始歡迎訊息（如果沒有歷史紀錄）
-        if (conversationHistory.length === 0) {
+        } else {
+            // 5. 【修正重點】如果沒有歷史紀錄，只顯示歡迎訊息，但不存入 history
             const initialMessages = {
-                'huson2.5': '哈囉！我是 Huson 2.5，專門處理複雜問題的。請講！😎',
-                'huson2.0': '你好，我是 Huson 2.0，專門聊天的。請講!。🧐',
+                'huson2.5': '哈囉！我是 Huson 2.5，負責處理複雜問題的😎',
+                'huson2.0': '你好，我是 Huson 2.0，負責跟你聊天的。🧐',
                 'studio': '您好，這裡是「隨便你工作室」，請問有什麼可以為您服務的？'
             };
             const welcomeText = initialMessages[chatId];
             appendMessage('ai', welcomeText, null, null, false);
-            // 將歡迎訊息也加入歷史紀錄
-            conversationHistory.push({ role: 'model', parts: [{ text: welcomeText }] });
-            saveHistory();
         }
     };
     
@@ -112,6 +109,12 @@ document.addEventListener('DOMContentLoaded', () => {
         const hasImage = imageData.base64 !== '';
         
         if (messageText === '' && !hasImage) return;
+
+        // 如果是客服模式，且是第一句話，要先手動加入歡迎訊息到 history
+        if (currentChatId === 'studio' && conversationHistory.length === 0) {
+            const initialMessages = { 'studio': '您好，這裡是「隨便你工作室」，請問有什麼可以為您服務的？' };
+            conversationHistory.push({ role: 'model', parts: [{ text: initialMessages.studio }] });
+        }
 
         appendMessage('user', messageText, imageData.base64, imageData.mimeType);
         
