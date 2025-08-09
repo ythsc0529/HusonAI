@@ -55,7 +55,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // 1. 設定聊天室標題
         const titles = {
             'huson2.5': 'Huson 3.0 pro',
-            'huson2.0': 'Huson3.0 mini',
+            'huson2.0': 'Huson 3.0 mini',
             'studio': '隨便你工作室 💬'
         };
         chatTitle.textContent = titles[chatId];
@@ -119,15 +119,22 @@ document.addEventListener('DOMContentLoaded', () => {
         appendMessage('user', messageText, imageData.base64, imageData.mimeType);
         
         const userMessageParts = [];
+        
+        // ==========================================================
+        //  ↓↓↓ 關鍵修正點 ↓↓↓
+        //  嚴格遵守 Google API 的順序要求：文字(text)必須在圖片(inlineData)之前
+        // ==========================================================
+        if (messageText) {
+             userMessageParts.push({ text: messageText });
+        }
         if (hasImage) {
-            // 對於有圖的訊息，將文字和圖片包在同一個 part 裡
             userMessageParts.push({
                 inlineData: { mimeType: imageData.mimeType, data: imageData.base64 }
             });
         }
-        if (messageText) {
-             userMessageParts.push({ text: messageText });
-        }
+        // ==========================================================
+        //  ↑↑↑ 關鍵修正點 ↑↑↑
+        // ==========================================================
         
         conversationHistory.push({ role: 'user', parts: userMessageParts });
         saveHistory();
@@ -182,7 +189,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
     
-    // ===== 輔助函式 =====
+    // ===== 輔助函式 (以下無變動) =====
 
     const appendMessage = (sender, text, imageBase64 = null, imageMimeType = 'image/jpeg', animate = true) => {
         const messageWrapper = document.createElement('div');
