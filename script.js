@@ -75,22 +75,23 @@ document.addEventListener('DOMContentLoaded', () => {
                 let text = '';
                 let imageBase64 = null;
                 let imageMimeType = 'image/jpeg'; // default
-                msg.parts.forEach(part => {
-                    if(part.text) {
-                        text = part.text;
-                    }
-                    if(part.inlineData) {
-                        imageBase64 = part.inlineData.data;
-                        imageMimeType = part.inlineData.mimeType;
-                    }
-                });
+                // 依據官方文件，圖片在前，文字在後
+                const imagePart = msg.parts.find(p => p.inlineData);
+                const textPart = msg.parts.find(p => p.text);
+                
+                if (textPart) text = textPart.text;
+                if (imagePart) {
+                    imageBase64 = imagePart.inlineData.data;
+                    imageMimeType = imagePart.inlineData.mimeType;
+                }
+                
                 appendMessage(msg.role === 'model' ? 'ai' : 'user', text, imageBase64, imageMimeType, false);
             });
         } else {
             // 5. 如果沒有歷史紀錄，只顯示歡迎訊息，但不存入 history
             const initialMessages = {
                 'huson2.5': '你好，我是 Huson 3.0 pro，專門處理複雜問題的。請講。🧐',
-                'huson2.0': '哈囉！我是 Huson 23.0 mini，地表最快的啦！有啥問題，儘管問！😎',
+                'huson2.0': '哈囉！我是 Huson 3.0 mini，地表最快的啦！有啥問題，儘管問！😎',
                 'studio': '您好，這裡是「隨便你工作室」，請問有什麼可以為您服務的？'
             };
             const welcomeText = initialMessages[chatId];
@@ -121,19 +122,19 @@ document.addEventListener('DOMContentLoaded', () => {
         const userMessageParts = [];
         
         // ==========================================================
-        //  ↓↓↓ 關鍵修正點 ↓↓↓
-        //  嚴格遵守 Google API 的順序要求：文字(text)必須在圖片(inlineData)之前
+        //  ↓↓↓ 最終修正點 ↓↓↓
+        //  嚴格遵守 Google 官方文件範例的順序：圖片(inlineData)在前，文字(text)在後
         // ==========================================================
-        if (messageText) {
-             userMessageParts.push({ text: messageText });
-        }
         if (hasImage) {
             userMessageParts.push({
                 inlineData: { mimeType: imageData.mimeType, data: imageData.base64 }
             });
         }
+        if (messageText) {
+             userMessageParts.push({ text: messageText });
+        }
         // ==========================================================
-        //  ↑↑↑ 關鍵修正點 ↑↑↑
+        //  ↑↑↑ 最終修正點 ↑↑↑
         // ==========================================================
         
         conversationHistory.push({ role: 'user', parts: userMessageParts });
@@ -208,6 +209,7 @@ document.addEventListener('DOMContentLoaded', () => {
         textContent.classList.add('text-content');
         
         if (sender === 'user') {
+            // 顯示時，先圖後文比較好看
             if (imageBase64) {
                 const img = document.createElement('img');
                 img.src = `data:${imageMimeType};base64,${imageBase64}`;
