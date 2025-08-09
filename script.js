@@ -90,7 +90,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // 5. 如果沒有歷史紀錄，只顯示歡迎訊息，但不存入 history
             const initialMessages = {
                 'huson2.5': '你好，我是 Huson 3.0 pro，專門處理複雜問題的。請講。🧐',
-                'huson2.0': '哈囉！我是 Huson 3.0 mini，地表最快的啦！有啥問題，儘管問！😎',
+                'huson2.0': '哈囉！我是 Huson 23.0 mini，地表最快的啦！有啥問題，儘管問！😎',
                 'studio': '您好，這裡是「隨便你工作室」，請問有什麼可以為您服務的？'
             };
             const welcomeText = initialMessages[chatId];
