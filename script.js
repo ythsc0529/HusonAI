@@ -54,8 +54,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const loadChat = (chatId) => {
         // 1. 設定聊天室標題
         const titles = {
-            'huson2.5': 'Huson 2.5',
-            'huson2.0': 'Huson 2.0',
+            'huson2.5': 'Huson 3.0 pro',
+            'huson2.0': 'Huson3.0 mini',
             'studio': '隨便你工作室 💬'
         };
         chatTitle.textContent = titles[chatId];
@@ -87,10 +87,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 appendMessage(msg.role === 'model' ? 'ai' : 'user', text, imageBase64, imageMimeType, false);
             });
         } else {
-            // 5. 【修正重點】如果沒有歷史紀錄，只顯示歡迎訊息，但不存入 history
+            // 5. 如果沒有歷史紀錄，只顯示歡迎訊息，但不存入 history
             const initialMessages = {
-                'huson2.5': '哈囉！我是 Huson 2.5，負責處理複雜問題的😎',
-                'huson2.0': '你好，我是 Huson 2.0，負責跟你聊天的。🧐',
+                'huson2.5': '你好，我是 Huson 3.0 pro，專門處理複雜問題的。請講。🧐',
+                'huson2.0': '哈囉！我是 Huson 3.0 mini，地表最快的啦！有啥問題，儘管問！😎',
                 'studio': '您好，這裡是「隨便你工作室」，請問有什麼可以為您服務的？'
             };
             const welcomeText = initialMessages[chatId];
@@ -119,12 +119,16 @@ document.addEventListener('DOMContentLoaded', () => {
         appendMessage('user', messageText, imageData.base64, imageData.mimeType);
         
         const userMessageParts = [];
-        if (messageText) userMessageParts.push({ text: messageText });
         if (hasImage) {
+            // 對於有圖的訊息，將文字和圖片包在同一個 part 裡
             userMessageParts.push({
                 inlineData: { mimeType: imageData.mimeType, data: imageData.base64 }
             });
         }
+        if (messageText) {
+             userMessageParts.push({ text: messageText });
+        }
+        
         conversationHistory.push({ role: 'user', parts: userMessageParts });
         saveHistory();
         
