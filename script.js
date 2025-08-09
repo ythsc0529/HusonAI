@@ -92,7 +92,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const initialMessages = {
                 'huson2.5': '你好，我是 Huson 3.0 pro，專門處理複雜問題的。請講。🧐',
                 'huson2.0': '哈囉！我是 Huson 3.0 mini，地表最快的啦！有啥問題，儘管問！😎',
-                'studio': '您好，這裡是「隨便你工作室」，請問有什麼可以為您服務的？'
+                'studio': '您好，這裡是「隨便你工作室」，請問有什麼可以為您服務的？(目前已知圖片無法正確傳送給AI之問題)'
             };
             const welcomeText = initialMessages[chatId];
             appendMessage('ai', welcomeText, null, null, false);
