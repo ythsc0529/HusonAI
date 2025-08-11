@@ -6,6 +6,7 @@
     <title>HusonAI - 選擇您的助理</title>
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/browser-image-compression@2.0.2/dist/browser-image-compression.js"></script>
 </head>
 <body>
 
@@ -18,14 +19,14 @@
             <main class="selection-grid">
                 <div class="selection-card" data-chat="huson2.5">
                     <div class="card-icon">🧠</div>
-                    <h2>Huson 3.0 pro</h2>
+                    <h2>Huson 3.0 Pro</h2>
                     <p>穩定且強大的旗艦模型。專精於深度邏輯推理、程式碼生成、複雜問題解答與最精準的視覺辨識任務。</p>
                 </div>
 
                 <div class="selection-card" data-chat="huson2.0">
                     <div class="card-icon">⚡️</div>
                     <h2>Huson 3.0 mini</h2>
-                    <p>最快的輕量模型。適合創意寫作、圖片分析和極速的日常對話。</p>
+                    <p>最新、最快的輕量模型。適合創意寫作、圖片分析和極速的日常對話。</p>
                 </div>
 
                 <div class="selection-card" data-chat="studio">
@@ -48,6 +49,8 @@
                 </div>
 
             <div id="image-preview-container"></div>
+            
+            <div id="compression-status"></div>
 
             <div class="chat-input-area">
                 <button id="voice-input-btn" class="icon-btn" title="語音輸入"><i class="fas fa-microphone"></i></button>
