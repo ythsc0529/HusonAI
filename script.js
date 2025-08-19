@@ -113,11 +113,32 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // 準備要傳送的資料
         const modelMap = { 'huson2.5': '2.5', 'huson2.0': '2.0' };
-        const payload = {
-            history: conversationHistory,
-            model: modelMap[currentChatId]
+        
+        // 將 conversationHistory 序列化成 server 能接受的純文字格式
+        const serializeHistoryForServer = (history) => {
+            return history.map(item => {
+                // 將 parts 合併成單一字串：text 直接保留，inlineData 轉成 data URL 標記
+                const combined = item.parts.map(p => {
+                    if (p.text) return p.text;
+                    if (p.inlineData && p.inlineData.data) {
+                        // 這裡把圖片轉成可傳的 data URL 字串（server 端若需要可再解碼）
+                        return `[[IMAGE:${p.inlineData.mimeType};base64,${p.inlineData.data}]]`;
+                    }
+                    return '';
+                }).filter(Boolean).join('\n');
+
+                return {
+                    role: item.role,
+                    content: combined
+                };
+            });
         };
 
+        const payload = {
+            history: serializeHistoryForServer(conversationHistory),
+            model: modelMap[currentChatId]
+        };
+ 
         // 決定性的除錯日誌
         console.log("準備傳送給 AI 的最終資料 (Final Payload to be Sent):", JSON.stringify(payload));
         
