@@ -19,7 +19,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let imageData = { mimeType: '', base64: '' };
     
     // 純粹化的圖片讀取邏輯
-    const handleImageSelection = (event) => {
+    const handleImageSelection = async (event) => {
         const file = event.target.files[0];
         if (!file) return;
 
@@ -29,30 +29,52 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        const reader = new FileReader();
-        
-        // 開始讀取
-        reader.readAsDataURL(file);
+        try {
+            // 壓縮參數（可依需求調整）
+            const options = {
+                maxSizeMB: 1.0,
+                maxWidthOrHeight: 1920,
+                useWebWorker: true
+            };
+            const compressedFile = await imageCompression(file, options);
+            const reader = new FileReader();
+            reader.readAsDataURL(compressedFile);
 
-        // 讀取成功
-        reader.onload = () => {
-            console.log("圖片檔案讀取成功。");
-            imageData.mimeType = file.type;
-            imageData.base64 = reader.result.split(',')[1];
-            showImagePreview(reader.result);
-        };
+            reader.onload = () => {
+                console.log("圖片檔案讀取成功（已壓縮）。");
+                imageData.mimeType = compressedFile.type || file.type;
+                imageData.base64 = reader.result.split(',')[1];
+                showImagePreview(reader.result);
+                // 顯示壓縮後大小
+                if (compressionStatus) {
+                    compressionStatus.style.display = 'block';
+                    compressionStatus.textContent = `已壓縮：${bytesToSize(compressedFile.size)}（原始：${bytesToSize(file.size)}）`;
+                }
+            };
 
-        // 讀取失敗
-        reader.onerror = () => {
-            console.error("FileReader 讀取檔案失敗！");
-            alert("讀取圖片時發生錯誤，請再試一次。");
+            reader.onerror = () => {
+                console.error("FileReader 讀取檔案失敗！");
+                alert("讀取圖片時發生錯誤，請再試一次。");
+                clearImagePreview();
+            };
+        } catch (err) {
+            console.error("圖片壓縮或讀取失敗", err);
+            alert("圖片處理失敗，請稍後再試或換張圖片。");
             clearImagePreview();
-        };
+        }
     };
 
     imageUploadInput.addEventListener('change', handleImageSelection);
     
-
+    // helper: bytes -> 可讀大小
+    const bytesToSize = (bytes) => {
+        if (bytes === 0) return '0 B';
+        const k = 1024;
+        const sizes = ['B', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    };
+    
     const sendMessage = async () => {
         const messageText = messageInput.value.trim();
         const hasImage = imageData.base64 !== '';
@@ -100,20 +122,31 @@ document.addEventListener('DOMContentLoaded', () => {
         console.log("準備傳送給 AI 的最終資料 (Final Payload to be Sent):", JSON.stringify(payload));
         
         try {
+            // 檢查 payload 大小，避免超出伺服器限制（此值可調整）
+            const payloadStr = JSON.stringify(payload);
+            const payloadBytes = new Blob([payloadStr]).size;
+            const MAX_PAYLOAD_BYTES = 2.5 * 1024 * 1024; // 2.5 MB
+            if (payloadBytes > MAX_PAYLOAD_BYTES) {
+                removeTypingIndicator();
+                alert(`圖片或訊息過大（${bytesToSize(payloadBytes)}），請壓縮或換張較小的圖片再試。`);
+                return;
+            }
+
             const response = await fetch('/.netlify/functions/getAiResponse', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload),
+                body: payloadStr,
             });
 
+            let data;
+            const text = await response.text();
+            try { data = JSON.parse(text); } catch { data = { error: text }; }
+
             if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.error || `HTTP 狀態碼: ${response.status}`);
+                throw new Error(data.error || `HTTP 狀態碼: ${response.status}`);
             }
 
-            const data = await response.json();
             const aiResponse = data.response;
-
             conversationHistory.push({ role: 'model', parts: [{ text: aiResponse }] });
             saveHistory();
             removeTypingIndicator();
