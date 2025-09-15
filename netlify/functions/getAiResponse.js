@@ -36,6 +36,7 @@ exports.handler = async (event) => {
             const parts = (msg.parts || []).map(p => {
                 if (p.text) return { text: p.text };
                 if (p.inlineData) {
+                    // 用簡短描述替代圖片二進位內容，保留 mimeType 資訊供模型參考
                     return { text: `[使用者上傳圖片: mime=${p.inlineData.mimeType}]` };
                 }
                 return { text: '' };

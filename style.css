@@ -179,39 +179,11 @@ body {
 .user-message { align-self: flex-end; flex-direction: row-reverse; }
 .user-message .text-content { background-color: var(--user-msg-bg); color: white; border-top-right-radius: 5px; }
 .user-message .text-content p { margin: 0; }
-.uploaded-image {
-    max-width: 200px;
-    border-radius: 10px;
-    margin-bottom: 8px;
-    cursor: pointer;
-    transition: transform 0.2s ease;
-}
-.uploaded-image:hover {
-    transform: scale(1.05);
-}
-#image-preview-container {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin-bottom: 10px;
-}
-#image-preview-container img {
-    max-height: 50px;
-    border-radius: 5px;
-}
-#image-preview-container button {
-    background: #ff4d4d;
-    color: white;
-    border: none;
-    width: 25px;
-    height: 25px;
-    border-radius: 50%;
-    cursor: pointer;
-    font-size: 1rem;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-}
+.uploaded-image { max-width: 200px; border-radius: 10px; margin-bottom: 8px; cursor: pointer; transition: transform 0.2s ease; }
+.uploaded-image:hover { transform: scale(1.05); }
+#image-preview-container { padding: 0 20px 10px; display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+#image-preview-container img { max-height: 50px; border-radius: 5px; }
+#image-preview-container button { background: #ff4d4d; color: white; border: none; width: 25px; height: 25px; border-radius: 50%; cursor: pointer; font-size: 1rem; }
 #compression-status { /* 先隱藏或移除樣式 */ display: none; }
 .chat-input-area { padding: 15px 20px; border-top: 1px solid #e0e0e0; display: flex; align-items: center; gap: 10px; background: #f8f9fa; flex-shrink: 0; }
 #message-input { flex-grow: 1; border: 1px solid #ccc; border-radius: 20px; padding: 10px 15px; font-size: 1rem; font-family: var(--font-family); resize: none; max-height: 100px; transition: all 0.2s ease; }
@@ -221,6 +193,59 @@ body {
 #voice-input-btn.recording { color: #dc3545; animation: pulse 1.5s infinite; }
 @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.2); } 100% { transform: scale(1); } }
 .icon-btn.send { color: var(--primary-color); }
+
+
+/* 等待 AI 回傳的動畫樣式（打字指示器 + 氣泡 shimmer） */
+.typing-indicator {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+    padding: 6px 8px;
+}
+.typing-indicator span {
+    width: 8px;
+    height: 8px;
+    background: #bdbdbd;
+    border-radius: 50%;
+    display: inline-block;
+    animation: typingDots 1s infinite ease-in-out;
+}
+.typing-indicator span:nth-child(1) { animation-delay: 0s; }
+.typing-indicator span:nth-child(2) { animation-delay: 0.15s; }
+.typing-indicator span:nth-child(3) { animation-delay: 0.3s; }
+
+@keyframes typingDots {
+    0%   { transform: translateY(0);   opacity: 0.4; }
+    50%  { transform: translateY(-6px); opacity: 1;   }
+    100% { transform: translateY(0);   opacity: 0.4; }
+}
+
+/* 讓正在等待回覆的 AI 氣泡帶有輕微 shimmer 效果 */
+.typing-indicator-wrapper .text-content {
+    background: linear-gradient(90deg, #e9e9eb 25%, #f3f3f5 50%, #e9e9eb 75%);
+    background-size: 200% 100%;
+    animation: typingShimmer 1.4s linear infinite;
+    color: var(--text-color);
+    border-top-left-radius: 5px;
+}
+
+/* 微動畫讓整個打字指示器稍微彈性顯示 */
+.typing-indicator-wrapper {
+    transform-origin: left center;
+    animation: typingPulse 1.4s ease-in-out infinite;
+    opacity: 0.98;
+}
+
+@keyframes typingShimmer {
+    0%   { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+
+@keyframes typingPulse {
+    0% { transform: translateY(0); }
+    50% { transform: translateY(-2px); }
+    100% { transform: translateY(0); }
+}
 
 
 /* ===== 手機版響應式設計 (RWD) ===== */
