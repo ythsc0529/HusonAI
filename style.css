@@ -181,20 +181,10 @@ body {
 .user-message .text-content p { margin: 0; }
 .uploaded-image { max-width: 200px; border-radius: 10px; margin-bottom: 8px; cursor: pointer; transition: transform 0.2s ease; }
 .uploaded-image:hover { transform: scale(1.05); }
-.text-content pre { background-color: #2d2d2d; color: #f8f8f2; padding: 15px; border-radius: 8px; overflow-x: auto; font-family: 'Courier New', Courier, monospace; }
-.text-content code { background-color: rgba(0,0,0,0.05); padding: 2px 5px; border-radius: 4px; font-family: 'Courier New', Courier, monospace; }
-.text-content pre code { background: none; padding: 0; }
-.text-content ul, .text-content ol { padding-left: 20px; }
-.text-content a { color: var(--primary-color); text-decoration: none; }
-.text-content a:hover { text-decoration: underline; }
-.typing-indicator { display: flex; align-items: center; gap: 5px; }
-.typing-indicator span { width: 8px; height: 8px; background-color: #999; border-radius: 50%; animation: typing 1s infinite ease-in-out; }
-.typing-indicator span:nth-child(2) { animation-delay: 0.15s; }
-.typing-indicator span:nth-child(3) { animation-delay: 0.3s; }
-@keyframes typing { 0%, 80%, 100% { transform: scale(0); } 40% { transform: scale(1.0); } }
 #image-preview-container { padding: 0 20px 10px; display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
 #image-preview-container img { max-height: 50px; border-radius: 5px; }
 #image-preview-container button { background: #ff4d4d; color: white; border: none; width: 25px; height: 25px; border-radius: 50%; cursor: pointer; font-size: 1rem; }
+#compression-status { /* 先隱藏或移除樣式 */ display: none; }
 .chat-input-area { padding: 15px 20px; border-top: 1px solid #e0e0e0; display: flex; align-items: center; gap: 10px; background: #f8f9fa; flex-shrink: 0; }
 #message-input { flex-grow: 1; border: 1px solid #ccc; border-radius: 20px; padding: 10px 15px; font-size: 1rem; font-family: var(--font-family); resize: none; max-height: 100px; transition: all 0.2s ease; }
 #message-input:focus { outline: none; border-color: var(--primary-color); box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25); }

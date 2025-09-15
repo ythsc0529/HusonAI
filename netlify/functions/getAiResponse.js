@@ -31,24 +31,25 @@ exports.handler = async (event) => {
         const { history, model: modelKey } = JSON.parse(event.body);
         console.log(`[INFO] Successfully parsed JSON. History contains ${history.length} items.`);
 
+        // --- 新增：將含有 inlineData (base64 圖片) 的 parts 轉成文字描述，避免直接傳 binary 結構給生成 API ---
+        const sanitizedHistory = (history || []).map(msg => {
+            const parts = (msg.parts || []).map(p => {
+                if (p.text) return { text: p.text };
+                if (p.inlineData) {
+                    // 用簡短描述替代圖片二進位內容，保留 mimeType 資訊供模型參考
+                    return { text: `[使用者上傳圖片: mime=${p.inlineData.mimeType}]` };
+                }
+                return { text: '' };
+            });
+            return { role: msg.role, parts };
+        });
+        console.log("[INFO] Sanitized history prepared:", JSON.stringify(sanitizedHistory));
+
         const modelName = modelMapping[modelKey] || 'gemini-1.5-pro-latest';
         const model = genAI.getGenerativeModel({ model: modelName, systemInstruction: systemPrompt });
 
-        // 把前端傳來的 history 轉成 Gemini 可接受的 contents（使用 text 欄位）
-        const contents = Array.isArray(history)
-            ? history.map(item => {
-                if (typeof item === 'string') return { text: item };
-                if (item && item.content) return { text: item.content };
-                // 若前端傳的是 role/parts 結構，嘗試合併 parts 內容（保持容錯）
-                if (item && item.parts && Array.isArray(item.parts)) {
-                    const combined = item.parts.map(p => p.text || (p.inlineData ? `[[IMAGE:${p.inlineData.mimeType};base64,${p.inlineData.data}]]` : '')).filter(Boolean).join('\n');
-                    return { text: combined };
-                }
-                return { text: '' };
-            })
-            : [{ text: '' }];
-        console.log('[INFO] Mapped contents for Gemini API:', contents);
-        const result = await model.generateContent({ contents });
+        // 傳入已淨化的 history
+        const result = await model.generateContent({ contents: sanitizedHistory });
         const response = result.response;
         const text = response.text();
 
