@@ -147,19 +147,18 @@ document.addEventListener('DOMContentLoaded', () => {
                 // 將 conversationHistory 序列化成 server 能接受的純文字格式
                 const serializeHistoryForServer = (history) => {
                     return history.map(item => {
-                        // 將 parts 合併成單一字串：text 直接保留，inlineData 轉成 data URL 標記
-                        const combined = item.parts.map(p => {
-                            if (p.text) return p.text;
+                        const parts = item.parts.map(p => {
+                            if (p.text) return { text: p.text };
                             if (p.inlineData && p.inlineData.data) {
-                                // 這裡把圖片轉成可傳的 data URL 字串（server 端若需要可再解碼）
-                                return `[[IMAGE:${p.inlineData.mimeType};base64,${p.inlineData.data}]]`;
+                                // For server, we need to send inlineData as an object
+                                return { inlineData: { mimeType: p.inlineData.mimeType, data: p.inlineData.data } };
                             }
                             return '';
                         }).filter(Boolean).join('\n');
 
                         return {
                             role: item.role,
-                            content: combined
+                            parts: parts
                         };
                     });
                 };
@@ -167,7 +166,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const payload = {
                     history: serializeHistoryForServer(conversationHistory),
                     model: modelMap[currentChatId]
-                };
+                }; 
      
                 // 決定性的除錯日誌
                 console.log("準備傳送給 AI 的最終資料 (Final Payload to be Sent):", JSON.stringify(payload));
@@ -425,4 +424,4 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
             voiceInputBtn.style.display = 'none';
         }
-    });
+    }); 
