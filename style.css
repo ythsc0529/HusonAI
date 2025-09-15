@@ -179,11 +179,39 @@ body {
 .user-message { align-self: flex-end; flex-direction: row-reverse; }
 .user-message .text-content { background-color: var(--user-msg-bg); color: white; border-top-right-radius: 5px; }
 .user-message .text-content p { margin: 0; }
-.uploaded-image { max-width: 200px; border-radius: 10px; margin-bottom: 8px; cursor: pointer; transition: transform 0.2s ease; }
-.uploaded-image:hover { transform: scale(1.05); }
-#image-preview-container { padding: 0 20px 10px; display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
-#image-preview-container img { max-height: 50px; border-radius: 5px; }
-#image-preview-container button { background: #ff4d4d; color: white; border: none; width: 25px; height: 25px; border-radius: 50%; cursor: pointer; font-size: 1rem; }
+.uploaded-image {
+    max-width: 200px;
+    border-radius: 10px;
+    margin-bottom: 8px;
+    cursor: pointer;
+    transition: transform 0.2s ease;
+}
+.uploaded-image:hover {
+    transform: scale(1.05);
+}
+#image-preview-container {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+#image-preview-container img {
+    max-height: 50px;
+    border-radius: 5px;
+}
+#image-preview-container button {
+    background: #ff4d4d;
+    color: white;
+    border: none;
+    width: 25px;
+    height: 25px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 1rem;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
 #compression-status { /* 先隱藏或移除樣式 */ display: none; }
 .chat-input-area { padding: 15px 20px; border-top: 1px solid #e0e0e0; display: flex; align-items: center; gap: 10px; background: #f8f9fa; flex-shrink: 0; }
 #message-input { flex-grow: 1; border: 1px solid #ccc; border-radius: 20px; padding: 10px 15px; font-size: 1rem; font-family: var(--font-family); resize: none; max-height: 100px; transition: all 0.2s ease; }

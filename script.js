@@ -20,47 +20,40 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const sendMessage = async () => {
         const messageText = messageInput.value.trim();
-        
-        if (messageText === '') return;
+        const imagePreview = imagePreviewContainer.querySelector('img');
 
-        // 只傳送文字部分（圖片功能已移除）
-        appendMessage('user', messageText);
+        if (!messageText && !imagePreview) return;
 
         const userMessageParts = [];
-        if (messageText) userMessageParts.push({ text: messageText });
+        if (messageText) {
+            appendMessage('user', messageText);
+            userMessageParts.push({ text: messageText });
+        }
 
+        if (imagePreview) {
+            const base64Image = imagePreview.src.split(',')[1];
+            appendImage('user', imagePreview.src);
+            userMessageParts.push({ inlineData: { mimeType: imagePreview.dataset.mimeType, data: base64Image } });
+            imagePreviewContainer.innerHTML = ''; // 清空圖片預覽
+        }
+
+        processMessage(userMessageParts);
+        messageInput.value = '';
+    };
+
+    const processMessage = async (userMessageParts) => {
         conversationHistory.push({ role: 'user', parts: userMessageParts });
         saveHistory();
-        
-        messageInput.value = '';
-        // 無圖片需清除的動作
-
-        if (currentChatId === 'studio') {
-            appendTypingIndicator();
-            setTimeout(() => {
-                removeTypingIndicator();
-                const replyText = '已收到您的回覆，我們的團隊將會盡快處理，感謝您的留言！';
-                appendMessage('ai', replyText);
-                conversationHistory.push({ role: 'model', parts: [{ text: replyText }] });
-                saveHistory();
-            }, 800);
-            return;
-        }
 
         appendTypingIndicator();
 
-        // 準備要傳送的資料
         const modelMap = { 'huson2.5': '2.5', 'huson2.0': '2.0' };
         const payload = {
             history: conversationHistory,
             model: modelMap[currentChatId]
         };
 
-        // 移除會 stringify 完整 payload（可能含大量資料）的日誌，改為簡短日誌
-        console.log("Prepared payload (no binary included). Model:", payload.model);
-        
         try {
-            // 禁用送出按鈕以避免重複送出
             sendBtn.disabled = true;
 
             const response = await fetch('/.netlify/functions/getAiResponse', {
@@ -87,7 +80,6 @@ document.addEventListener('DOMContentLoaded', () => {
             removeTypingIndicator();
             appendMessage('ai', `哎呀，好像出錯了捏... 歹勢啦！😥\n錯誤訊息: ${error.message}`);
         } finally {
-            // 無論成功或失敗都重新啟用按鈕
             sendBtn.disabled = false;
         }
     };
@@ -142,6 +134,24 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
             textContent.innerHTML = marked.parse(text);
         }
+        messageWrapper.appendChild(avatar);
+        messageWrapper.appendChild(textContent);
+        chatWindow.appendChild(messageWrapper);
+        chatWindow.scrollTop = chatWindow.scrollHeight;
+    };
+
+    const appendImage = (sender, imageUrl) => {
+        const messageWrapper = document.createElement('div');
+        messageWrapper.classList.add('message', `${sender}-message`);
+        const avatar = document.createElement('div');
+        avatar.classList.add('avatar');
+        avatar.textContent = sender === 'ai' ? 'H' : '你';
+        const textContent = document.createElement('div');
+        textContent.classList.add('text-content');
+        const img = document.createElement('img');
+        img.src = imageUrl;
+        img.classList.add('uploaded-image');
+        textContent.appendChild(img);
         messageWrapper.appendChild(avatar);
         messageWrapper.appendChild(textContent);
         chatWindow.appendChild(messageWrapper);
@@ -222,4 +232,28 @@ document.addEventListener('DOMContentLoaded', () => {
     } else {
         voiceInputBtn.style.display = 'none';
     }
+
+    imageUploadInput.addEventListener('change', () => {
+        const file = imageUploadInput.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = () => {
+                imagePreviewContainer.innerHTML = ''; // 清空之前的預覽
+                const img = document.createElement('img');
+                img.src = reader.result;
+                img.dataset.mimeType = file.type;
+                img.classList.add('uploaded-image');
+                const removeBtn = document.createElement('button');
+                removeBtn.textContent = '✖';
+                removeBtn.title = '移除圖片';
+                removeBtn.addEventListener('click', () => {
+                    imagePreviewContainer.innerHTML = ''; // 移除圖片預覽
+                    imageUploadInput.value = ''; // 清空檔案輸入
+                });
+                imagePreviewContainer.appendChild(img);
+                imagePreviewContainer.appendChild(removeBtn);
+            };
+            reader.readAsDataURL(file);
+        }
+    });
 });
