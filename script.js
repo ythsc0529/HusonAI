@@ -13,6 +13,35 @@ document.addEventListener('DOMContentLoaded', () => {
     const chatTitle = document.getElementById('chat-title');
     const compressionStatus = document.getElementById('compression-status');
 
+    // 新增：更新報 Modal 元素與行為
+    const updateModal = document.getElementById('update-modal');
+    const updateCloseBtn = document.getElementById('update-close-btn');
+    const updateDismissCheckbox = document.getElementById('update-dismiss-checkbox');
+
+    // 若 localStorage 設定了 hideUpdates=true 則不顯示，否則每次登入顯示
+    const hideUpdates = localStorage.getItem('hideUpdates') === 'true';
+    if (!hideUpdates) {
+        updateModal.classList.add('active');
+        updateModal.setAttribute('aria-hidden', 'false');
+    }
+
+    const closeUpdateModal = () => {
+        if (updateDismissCheckbox && updateDismissCheckbox.checked) {
+            localStorage.setItem('hideUpdates', 'true');
+        }
+        updateModal.classList.remove('active');
+        updateModal.setAttribute('aria-hidden', 'true');
+    };
+
+    updateCloseBtn.addEventListener('click', closeUpdateModal);
+    // 點遮罩也關閉
+    const overlay = document.querySelector('.update-modal-overlay');
+    if (overlay) overlay.addEventListener('click', closeUpdateModal);
+    // Esc 鍵關閉
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && updateModal.classList.contains('active')) closeUpdateModal();
+    });
+
     // 全域變數
     let currentChatId = null;
     let conversationHistory = [];

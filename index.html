@@ -58,6 +58,31 @@
             </div>
         </div>
     </div>
+
+    <!-- 新增：每次登入的更新報 Modal -->
+    <div id="update-modal" class="update-modal" role="dialog" aria-modal="true" aria-labelledby="update-title" aria-hidden="true">
+        <div class="update-modal-overlay" data-close="true"></div>
+        <div class="update-modal-dialog">
+            <header class="update-modal-header">
+                <h2 id="update-title">更新報 • 最新公告</h2>
+            </header>
+            <section class="update-modal-body">
+                <p><strong>版本：</strong>13.0.6</p>
+                <ul>
+                    <li>新增：每次登入會顯示更新報，讓您掌握最新功能與修正。</li>
+                    <li>修正：聊天回應穩定性與 UI 調整。</li>
+                    <li>優化：語音辨識與發送按鈕行為改善。</li>
+                </ul>
+                <p>若要關閉此提示，勾選「下次不再顯示」並關閉視窗。</p>
+                <label class="update-dismiss">
+                    <input type="checkbox" id="update-dismiss-checkbox"> 下次不再顯示
+                </label>
+            </section>
+            <footer class="update-modal-footer">
+                <button id="update-close-btn" class="btn">關閉</button>
+            </footer>
+        </div>
+    </div>
     
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="script.js"></script>
