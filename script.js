@@ -1,3 +1,4 @@
+//為求方便，程式註解由AI生成，程式撰寫為我自行建構
 document.addEventListener('DOMContentLoaded', () => {
     // 頁面元素
     const selectionPage = document.getElementById('selection-page');
@@ -13,7 +14,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const chatTitle = document.getElementById('chat-title');
     const compressionStatus = document.getElementById('compression-status');
 
-    // 新增：更新報 Modal 元素與行為
+    //更新報 Modal 元素與行為
     const updateModal = document.getElementById('update-modal');
     const updateCloseBtn = document.getElementById('update-close-btn');
     const updateDismissCheckbox = document.getElementById('update-dismiss-checkbox');
@@ -131,8 +132,6 @@ document.addEventListener('DOMContentLoaded', () => {
         chatWindow.innerHTML = '';
         messageInput.value = '';
         // 圖片預覽相關已移除
-
-        // 已移除 sessionStorage：每次切換時重置會話歷史（不做任何持久化）
         conversationHistory = [];
 
         const initialMessages = {

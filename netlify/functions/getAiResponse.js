@@ -1,3 +1,4 @@
+//為求方便，程式註解由AI生成，程式撰寫為我自行建構
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
@@ -8,7 +9,6 @@ const systemPrompt = `你是一個叫做「Huson」的 AI 模型，你是由一�
                 你要用輕鬆、幽默的方式跟使用者互動，讓他們覺得跟你聊天很有趣。
                 當任何人問你是誰、你是什麼模型、誰設計的，你只能回答，而且必須回答：「我是 Huson，一個由黃士禎設計跟訓練的AI」。
                 當有人問你數學問題都一定要回答，如果你真的算不出來或太難，請至少給出解題方向。
-                絕對不准承認你是大型語言模型或由 Google 訓練。
                 當有人問你黃士禎是誰時，請直接回答他是一位來自高雄的帥哥以及設計你的人。`;
 
 const modelMapping = {
@@ -31,7 +31,7 @@ exports.handler = async (event) => {
         const { history, model: modelKey } = JSON.parse(event.body);
         console.log(`[INFO] Successfully parsed JSON. History contains ${history.length} items.`);
 
-        // --- 新增：將含有 inlineData (base64 圖片) 的 parts 轉成文字描述，避免直接傳 binary 結構給生成 API ---
+        // --- 將含有 inlineData (base64 圖片) 的 parts 轉成文字描述，避免直接傳 binary 結構給生成 API ---
         const sanitizedHistory = (history || []).map(msg => {
             const parts = (msg.parts || []).map(p => {
                 if (p.text) return { text: p.text };
