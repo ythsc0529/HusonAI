@@ -1,90 +1,140 @@
 <!DOCTYPE html>
 <html lang="zh-Hant-TW">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>HusonAI - 選擇您的助理</title>
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/browser-image-compression@2.0.2/dist/browser-image-compression.js"></script>
+    <script
+        src="https://cdn.jsdelivr.net/npm/browser-image-compression@2.0.2/dist/browser-image-compression.js"></script>
 </head>
+
 <body>
+
+    <!-- Background Elements -->
+    <div class="background-blobs">
+        <div class="blob blob-1"></div>
+        <div class="blob blob-2"></div>
+        <div class="blob blob-3"></div>
+    </div>
 
     <div id="selection-page" class="page active">
         <div class="selection-container">
             <header class="selection-header">
-                <h1>HusonAI 🤖</h1>
-                <p>請選擇您的專屬助理</p>
+                <div class="logo-badge">AI 助理</div>
+                <h1>HusonAI <span class="version">3.0</span></h1>
+                <p>體驗下一世代的智能助理。</p>
             </header>
             <main class="selection-grid">
-                <div class="selection-card" data-chat="huson2.5">
-                    <div class="card-icon">🧠</div>
-                    <h2>Huson 3.0 Pro</h2>
-                    <p>穩定且強大的旗艦模型。專精於深度邏輯推理、程式碼生成、複雜問題解答與最精準的視覺辨識任務。</p>
+                <div class="selection-card glass-panel" data-chat="huson2.5">
+                    <div class="card-content">
+                        <div class="card-icon-wrapper">
+                            <div class="card-icon">🧠</div>
+                        </div>
+                        <h2>Huson 3.0 Pro</h2>
+                        <p>旗艦級智能。專精於深度推理、程式碼生成與複雜問題解決。</p>
+                        <div class="card-footer">
+                            <span class="tag">最強大</span>
+                            <i class="fas fa-arrow-right"></i>
+                        </div>
+                    </div>
                 </div>
 
-                <div class="selection-card" data-chat="huson2.0">
-                    <div class="card-icon">⚡️</div>
-                    <h2>Huson 3.0 mini</h2>
-                    <p>最新、最快的輕量模型。適合創意寫作、圖片分析和極速的日常對話。</p>
+                <div class="selection-card glass-panel" data-chat="huson2.0">
+                    <div class="card-content">
+                        <div class="card-icon-wrapper">
+                            <div class="card-icon">⚡️</div>
+                        </div>
+                        <h2>Huson 3.0 Mini</h2>
+                        <p>極速響應。適合創意寫作、快速分析與日常任務。</p>
+                        <div class="card-footer">
+                            <span class="tag">最快速</span>
+                            <i class="fas fa-arrow-right"></i>
+                        </div>
+                    </div>
                 </div>
 
-                <div class="selection-card" data-chat="studio">
-                    <div class="card-icon">💬</div>
-                    <h2>隨便你工作室</h2>
-                    <p>需要專人服務或有任何建議嗎？請在此留言，我們的團隊會盡快與您聯繫。</p>
+                <div class="selection-card glass-panel" data-chat="studio">
+                    <div class="card-content">
+                        <div class="card-icon-wrapper">
+                            <div class="card-icon">💬</div>
+                        </div>
+                        <h2>工作室支援</h2>
+                        <p>需要協助或有任何建議嗎？直接與我們的開發團隊聯繫。</p>
+                        <div class="card-footer">
+                            <span class="tag">支援</span>
+                            <i class="fas fa-arrow-right"></i>
+                        </div>
+                    </div>
                 </div>
             </main>
         </div>
     </div>
 
     <div id="chat-page" class="page">
-        <div class="container">
+        <div class="container glass-panel">
             <header class="chat-header">
-                <button id="back-to-selection-btn" class="back-btn"><i class="fas fa-arrow-left"></i> 返回</button>
-                <h1 id="chat-title">HusonAI</h1>
+                <button id="back-to-selection-btn" class="back-btn icon-btn-small">
+                    <i class="fas fa-chevron-left"></i>
+                </button>
+                <div class="header-info">
+                    <h1 id="chat-title">HusonAI</h1>
+                    <span class="status-dot"></span>
+                </div>
+                <div class="header-actions">
+                    <!-- Future actions can go here -->
+                </div>
             </header>
 
             <div class="chat-window" id="chat-window">
-                </div>
-
-            <!-- 圖片功能已移除 -->
+                <!-- Messages will be injected here -->
+            </div>
 
             <div class="chat-input-area">
-                <button id="voice-input-btn" class="icon-btn" title="語音輸入"><i class="fas fa-microphone"></i></button>
-                <textarea id="message-input" placeholder="來尬聊啊..."></textarea>
-                <!-- 圖片上傳按鈕已移除 -->
-                <button id="send-btn" class="icon-btn send"><i class="fas fa-paper-plane"></i></button>
+                <div class="input-wrapper glass-panel-inner">
+                    <button id="voice-input-btn" class="icon-btn" title="語音輸入">
+                        <i class="fas fa-microphone"></i>
+                    </button>
+                    <textarea id="message-input" placeholder="輸入訊息..." rows="1"></textarea>
+                    <button id="send-btn" class="icon-btn send">
+                        <i class="fas fa-paper-plane"></i>
+                    </button>
+                </div>
             </div>
         </div>
     </div>
 
-    <!--每次登入的更新報 Modal -->
-    <div id="update-modal" class="update-modal" role="dialog" aria-modal="true" aria-labelledby="update-title" aria-hidden="true">
+    <!-- Update Modal -->
+    <div id="update-modal" class="update-modal" role="dialog" aria-modal="true" aria-hidden="true">
         <div class="update-modal-overlay" data-close="true"></div>
-        <div class="update-modal-dialog">
+        <div class="update-modal-dialog glass-panel">
             <header class="update-modal-header">
-                <h2 id="update-title">更新報 • 最新公告</h2>
+                <div class="modal-icon">✨</div>
+                <h2 id="update-title">最新消息</h2>
             </header>
             <section class="update-modal-body">
-                <p><strong>版本：</strong>13.0.6</p>
+                <div class="version-tag">v13.0.6</div>
                 <ul>
-                    <li>新增：每次登入會顯示更新報，讓您掌握最新功能與修正。</li>
-                    <li>修正：聊天回應穩定性與 UI 調整。</li>
-                    <li>優化：語音辨識與發送按鈕行為改善。</li>
+                    <li><strong>全新外觀：</strong> 採用現代化的玻璃擬態設計，煥然一新。</li>
+                    <li><strong>更流暢：</strong> 強化動畫與轉場效果，帶來頂級體驗。</li>
+                    <li><strong>更快速：</strong> 優化效能，回應更迅速。</li>
                 </ul>
-                <p>若要關閉此提示，勾選「下次不再顯示」並關閉視窗。</p>
-                <label class="update-dismiss">
-                    <input type="checkbox" id="update-dismiss-checkbox"> 下次不再顯示
-                </label>
+                <div class="dismiss-wrapper">
+                    <label class="update-dismiss">
+                        <input type="checkbox" id="update-dismiss-checkbox"> 下次不再顯示
+                    </label>
+                </div>
             </section>
             <footer class="update-modal-footer">
-                <button id="update-close-btn" class="btn">關閉</button>
+                <button id="update-close-btn" class="btn-primary">知道了</button>
             </footer>
         </div>
     </div>
-    
+
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="script.js"></script>
 </body>
+
 </html>
