@@ -134,6 +134,10 @@ body {
     transform: scale(0.95);
     transition: opacity 0.5s var(--ease-out), transform 0.5s var(--ease-out), visibility 0.5s;
     padding: 20px;
+    overflow-y: auto;
+    /* Allow vertical scrolling within the page */
+    -webkit-overflow-scrolling: touch;
+    /* Smooth scrolling on iOS */
 }
 
 .page.active {
@@ -683,16 +687,30 @@ body {
 
 /* ===== Mobile Responsive ===== */
 @media (max-width: 768px) {
+    .selection-header {
+        margin-bottom: 30px;
+    }
+
     .selection-header h1 {
         font-size: 2.5rem;
     }
 
     .selection-grid {
         grid-template-columns: 1fr;
+        gap: 20px;
+        padding-bottom: 40px;
+        /* Ensure last card isn't cut off */
+    }
+
+    .selection-card {
+        padding: 25px;
     }
 
     .container {
         height: 100vh;
+        /* Full viewport height */
+        height: 100dvh;
+        /* Dynamic viewport height for mobile browsers */
         border-radius: 0;
         max-width: none;
     }
@@ -703,6 +721,11 @@ body {
 
     .message {
         max-width: 90%;
+    }
+
+    /* Adjust blobs for mobile to reduce performance impact */
+    .blob {
+        filter: blur(60px);
     }
 }
 
