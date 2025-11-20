@@ -135,10 +135,22 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (error) {
             console.error("呼叫 AI 時出錯:", error);
             removeTypingIndicator();
-            console.error("呼叫 AI 時出錯:", error);
-            removeTypingIndicator();
-            showNotification('發生錯誤', error.message, 'error');
-            appendMessage('ai', `哎呀，好像出錯了捏... 歹勢啦！😥\n錯誤訊息: ${error.message}`);
+
+            let errorMessage = `哎呀，好像出錯了捏... 歹勢啦！😥\n錯誤訊息: ${error.message}`;
+            let notificationMessage = error.message;
+
+            if (currentChatId === 'huson2.5') {
+                const suggestion = '\n\n💡 建議：您可以嘗試使用「Huson 3.0 mini」模型，或是重新整理網頁再試一次。';
+                errorMessage += suggestion;
+                notificationMessage += ' (建議嘗試 Mini 模型或重整網頁)';
+            } else if (currentChatId === 'huson2.0') {
+                const suggestion = '\n\n💡 建議：您可以嘗試重新整理網頁再試一次。';
+                errorMessage += suggestion;
+                notificationMessage += ' (建議重整網頁)';
+            }
+
+            showNotification('發生錯誤', notificationMessage, 'error');
+            appendMessage('ai', errorMessage);
         } finally {
             // 無論成功或失敗都重新啟用按鈕
             sendBtn.disabled = false;
