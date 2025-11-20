@@ -9,6 +9,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const messageInput = document.getElementById('message-input');
     const sendBtn = document.getElementById('send-btn');
     const voiceInputBtn = document.getElementById('voice-input-btn');
+    const uploadBtn = document.getElementById('upload-btn');
     const imageUploadInput = document.getElementById('image-upload-input');
     const imagePreviewContainer = document.getElementById('image-preview-container');
     const chatTitle = document.getElementById('chat-title');
@@ -46,24 +47,37 @@ document.addEventListener('DOMContentLoaded', () => {
     // 全域變數
     let currentChatId = null;
     let conversationHistory = [];
-    // 圖片功能已移除，故不再保留 imageData
+    let imageData = null;
 
     const sendMessage = async () => {
         const messageText = messageInput.value.trim();
-        
+
         if (messageText === '') return;
 
-        // 只傳送文字部分（圖片功能已移除）
-        appendMessage('user', messageText);
-
+        // 構建訊息內容
         const userMessageParts = [];
         if (messageText) userMessageParts.push({ text: messageText });
 
+        if (imageData) {
+            userMessageParts.push({
+                inlineData: {
+                    mimeType: imageData.mimeType,
+                    data: imageData.data
+                }
+            });
+            appendMessage('user', messageText, true, imageData);
+        } else {
+            appendMessage('user', messageText);
+        }
+
         conversationHistory.push({ role: 'user', parts: userMessageParts });
         saveHistory();
-        
+
         messageInput.value = '';
-        // 無圖片需清除的動作
+        // 清除圖片
+        imageData = null;
+        imageUploadInput.value = '';
+        imagePreviewContainer.innerHTML = '';
 
         if (currentChatId === 'studio') {
             appendTypingIndicator();
@@ -88,7 +102,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // 移除會 stringify 完整 payload（可能含大量資料）的日誌，改為簡短日誌
         console.log("Prepared payload (no binary included). Model:", payload.model);
-        
+
         try {
             // 禁用送出按鈕以避免重複送出
             sendBtn.disabled = true;
@@ -121,7 +135,7 @@ document.addEventListener('DOMContentLoaded', () => {
             sendBtn.disabled = false;
         }
     };
-    
+
     const loadChat = (chatId) => {
         const titles = {
             'huson2.5': 'Huson 3.0 pro',
@@ -131,7 +145,8 @@ document.addEventListener('DOMContentLoaded', () => {
         chatTitle.textContent = titles[chatId];
         chatWindow.innerHTML = '';
         messageInput.value = '';
-        // 圖片預覽相關已移除
+        imageData = null;
+        imagePreviewContainer.innerHTML = '';
         conversationHistory = [];
 
         const initialMessages = {
@@ -148,7 +163,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
     };
 
-    const appendMessage = (sender, text, animate = true) => {
+    const appendMessage = (sender, text, animate = true, image = null) => {
         const messageWrapper = document.createElement('div');
         messageWrapper.classList.add('message', `${sender}-message`);
         if (!animate) {
@@ -161,7 +176,16 @@ document.addEventListener('DOMContentLoaded', () => {
         avatar.textContent = sender === 'ai' ? 'H' : '你';
         const textContent = document.createElement('div');
         textContent.classList.add('text-content');
+
         if (sender === 'user') {
+            if (image) {
+                const img = document.createElement('img');
+                img.src = `data:${image.mimeType};base64,${image.data}`;
+                img.style.maxWidth = '100%';
+                img.style.borderRadius = '8px';
+                img.style.marginBottom = text ? '8px' : '0';
+                textContent.appendChild(img);
+            }
             if (text) {
                 const p = document.createElement('p');
                 p.textContent = text;
@@ -207,7 +231,7 @@ document.addEventListener('DOMContentLoaded', () => {
             chatPage.classList.add('active');
         })
     });
-    
+
     backBtn.addEventListener('click', () => {
         chatPage.classList.remove('active');
         selectionPage.classList.add('active');
@@ -231,7 +255,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 recognition.stop();
             } else {
                 try { recognition.start(); }
-                catch(e) { console.error("語音辨識啟動失敗", e); alert("語音辨識無法啟動。"); }
+                catch (e) { console.error("語音辨識啟動失敗", e); alert("語音辨識無法啟動。"); }
             }
         });
 
@@ -250,4 +274,67 @@ document.addEventListener('DOMContentLoaded', () => {
     } else {
         voiceInputBtn.style.display = 'none';
     }
+
+    // 圖片上傳處理
+    uploadBtn.addEventListener('click', () => {
+        imageUploadInput.click();
+    });
+
+    imageUploadInput.addEventListener('change', async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        if (!file.type.startsWith('image/')) {
+            alert('請上傳圖片檔案');
+            return;
+        }
+
+        try {
+            // 壓縮圖片
+            const options = {
+                maxSizeMB: 1,
+                maxWidthOrHeight: 1024,
+                useWebWorker: true
+            };
+
+            let compressedFile = file;
+            // 如果有引入 browser-image-compression 則使用
+            if (window.imageCompression) {
+                compressedFile = await imageCompression(file, options);
+            }
+
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                const base64String = reader.result.split(',')[1];
+                imageData = {
+                    mimeType: file.type,
+                    data: base64String
+                };
+
+                // 顯示預覽
+                imagePreviewContainer.innerHTML = `
+                    <div class="image-preview-item">
+                        <img src="${reader.result}" alt="Preview">
+                        <button class="remove-image-btn" onclick="removeImage()">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                `;
+
+                // 綁定移除按鈕事件 (因為 onclick="removeImage()" 需要全域函數，這裡用事件委派或直接綁定)
+                const removeBtn = imagePreviewContainer.querySelector('.remove-image-btn');
+                removeBtn.onclick = (e) => {
+                    e.stopPropagation(); // 防止觸發其他點擊
+                    imageData = null;
+                    imageUploadInput.value = '';
+                    imagePreviewContainer.innerHTML = '';
+                };
+            };
+            reader.readAsDataURL(compressedFile);
+
+        } catch (error) {
+            console.error('圖片處理失敗:', error);
+            alert('圖片處理失敗，請重試');
+        }
+    });
 });

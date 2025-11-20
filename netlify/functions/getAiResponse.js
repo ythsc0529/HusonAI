@@ -26,24 +26,15 @@ exports.handler = async (event) => {
 
     // 記錄下收到的最原始的請求內文
     console.log(`[INFO] Received event body:`, event.body);
-    
+
     try {
         const { history, model: modelKey } = JSON.parse(event.body);
         console.log(`[INFO] Successfully parsed JSON. History contains ${history.length} items.`);
 
-        // --- 將含有 inlineData (base64 圖片) 的 parts 轉成文字描述，避免直接傳 binary 結構給生成 API ---
-        const sanitizedHistory = (history || []).map(msg => {
-            const parts = (msg.parts || []).map(p => {
-                if (p.text) return { text: p.text };
-                if (p.inlineData) {
-                    // 用簡短描述替代圖片二進位內容，保留 mimeType 資訊供模型參考
-                    return { text: `[使用者上傳圖片: mime=${p.inlineData.mimeType}]` };
-                }
-                return { text: '' };
-            });
-            return { role: msg.role, parts };
-        });
-        console.log("[INFO] Sanitized history prepared:", JSON.stringify(sanitizedHistory));
+        // --- 直接使用前端傳來的 history，包含 inlineData (base64 圖片) ---
+        // 為了安全起見，還是可以做一些基本的檢查，但這裡我們直接傳遞
+        const sanitizedHistory = history;
+        console.log("[INFO] History prepared for generation (binary data included).");
 
         const modelName = modelMapping[modelKey] || 'gemini-1.5-pro-latest';
         const model = genAI.getGenerativeModel({ model: modelName, systemInstruction: systemPrompt });
@@ -61,9 +52,9 @@ exports.handler = async (event) => {
     } catch (error) {
         // 記錄下最詳細的錯誤物件
         console.error("[ERROR] An error occurred:", JSON.stringify(error, null, 2));
-        
-        const userFriendlyError = (error.response && error.response.data && error.response.data.error) 
-            ? error.response.data.error.message 
+
+        const userFriendlyError = (error.response && error.response.data && error.response.data.error)
+            ? error.response.data.error.message
             : error.message;
 
         return {
