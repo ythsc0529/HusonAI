@@ -833,3 +833,116 @@ body {
 .input-wrapper {
     flex-wrap: wrap;
 }
+
+/* ===== Custom Notification ===== */
+.notification-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    z-index: 2000;
+    pointer-events: none;
+}
+
+.notification {
+    background: rgba(30, 41, 59, 0.9);
+    border: 1px solid var(--glass-border);
+    backdrop-filter: blur(12px);
+    padding: 16px 24px;
+    border-radius: var(--radius-md);
+    color: #fff;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    transform: translateX(100%);
+    animation: slideInRight 0.4s cubic-bezier(0.215, 0.61, 0.355, 1) forwards;
+    pointer-events: auto;
+    min-width: 300px;
+    max-width: 400px;
+}
+
+.notification.hiding {
+    animation: slideOutRight 0.4s cubic-bezier(0.215, 0.61, 0.355, 1) forwards;
+}
+
+.notification-icon {
+    font-size: 1.25rem;
+}
+
+.notification-content {
+    flex: 1;
+}
+
+.notification-title {
+    font-weight: 600;
+    font-size: 0.95rem;
+    margin-bottom: 4px;
+}
+
+.notification-message {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    line-height: 1.4;
+}
+
+.notification-close {
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 50%;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.notification-close:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+}
+
+/* Notification Types */
+.notification.warning .notification-icon {
+    color: #fbbf24;
+}
+
+.notification.error .notification-icon {
+    color: #ef4444;
+}
+
+.notification.success .notification-icon {
+    color: #10b981;
+}
+
+.notification.info .notification-icon {
+    color: #3b82f6;
+}
+
+@keyframes slideInRight {
+    from {
+        opacity: 0;
+        transform: translateX(100%);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes slideOutRight {
+    from {
+        opacity: 1;
+        transform: translateX(0);
+    }
+
+    to {
+        opacity: 0;
+        transform: translateX(100%);
+    }
+}

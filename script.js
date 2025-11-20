@@ -14,6 +14,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const imagePreviewContainer = document.getElementById('image-preview-container');
     const chatTitle = document.getElementById('chat-title');
     const compressionStatus = document.getElementById('compression-status');
+    const notificationContainer = document.getElementById('notification-container');
 
     //更新報 Modal 元素與行為
     const updateModal = document.getElementById('update-modal');
@@ -52,7 +53,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const sendMessage = async () => {
         const messageText = messageInput.value.trim();
 
-        if (messageText === '') return;
+        if (messageText === '') {
+            if (imageData) {
+                showNotification('請輸入文字', '傳送圖片時請附上說明文字，讓 AI 更能理解您的需求。', 'warning');
+            }
+            return;
+        }
 
         // 構建訊息內容
         const userMessageParts = [];
@@ -129,6 +135,9 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (error) {
             console.error("呼叫 AI 時出錯:", error);
             removeTypingIndicator();
+            console.error("呼叫 AI 時出錯:", error);
+            removeTypingIndicator();
+            showNotification('發生錯誤', error.message, 'error');
             appendMessage('ai', `哎呀，好像出錯了捏... 歹勢啦！😥\n錯誤訊息: ${error.message}`);
         } finally {
             // 無論成功或失敗都重新啟用按鈕
@@ -255,7 +264,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 recognition.stop();
             } else {
                 try { recognition.start(); }
-                catch (e) { console.error("語音辨識啟動失敗", e); alert("語音辨識無法啟動。"); }
+                catch (e) {
+                    console.error("語音辨識啟動失敗", e);
+                    showNotification('語音辨識失敗', '無法啟動語音辨識功能。', 'error');
+                }
             }
         });
 
@@ -268,7 +280,7 @@ document.addEventListener('DOMContentLoaded', () => {
         recognition.onerror = (event) => {
             if (event.error !== 'no-speech') {
                 console.error('語音辨識錯誤:', event.error);
-                alert(`語音辨識好像怪怪的：${event.error}`);
+                showNotification('語音辨識錯誤', `發生錯誤：${event.error}`, 'error');
             }
         };
     } else {
@@ -285,7 +297,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!file) return;
 
         if (!file.type.startsWith('image/')) {
-            alert('請上傳圖片檔案');
+            showNotification('格式錯誤', '請上傳圖片檔案 (JPG, PNG, WEBP 等)。', 'warning');
             return;
         }
 
@@ -334,7 +346,56 @@ document.addEventListener('DOMContentLoaded', () => {
 
         } catch (error) {
             console.error('圖片處理失敗:', error);
-            alert('圖片處理失敗，請重試');
+            showNotification('圖片處理失敗', '無法處理此圖片，請試試看別張。', 'error');
         }
     });
+
+    // Notification System
+    const showNotification = (title, message, type = 'info') => {
+        const notification = document.createElement('div');
+        notification.classList.add('notification', type);
+
+        const icons = {
+            warning: 'fa-exclamation-triangle',
+            error: 'fa-times-circle',
+            success: 'fa-check-circle',
+            info: 'fa-info-circle'
+        };
+
+        notification.innerHTML = `
+            <div class="notification-icon">
+                <i class="fas ${icons[type]}"></i>
+            </div>
+            <div class="notification-content">
+                <div class="notification-title">${title}</div>
+                <div class="notification-message">${message}</div>
+            </div>
+            <button class="notification-close">
+                <i class="fas fa-times"></i>
+            </button>
+        `;
+
+        const closeBtn = notification.querySelector('.notification-close');
+        closeBtn.addEventListener('click', () => {
+            closeNotification(notification);
+        });
+
+        notificationContainer.appendChild(notification);
+
+        // Auto remove after 5 seconds
+        setTimeout(() => {
+            if (notification.parentElement) {
+                closeNotification(notification);
+            }
+        }, 5000);
+    };
+
+    const closeNotification = (notification) => {
+        notification.classList.add('hiding');
+        notification.addEventListener('animationend', () => {
+            if (notification.parentElement) {
+                notification.remove();
+            }
+        });
+    };
 });
