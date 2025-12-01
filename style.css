@@ -946,3 +946,55 @@ body {
         transform: translateX(100%);
     }
 }
+
+/* Searching Indicator */
+.searching-indicator {
+    display: flex;
+    gap: 8px;
+    padding: 6px;
+    align-items: center;
+}
+
+.searching-indicator span {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    animation: searchBounce 1.5s infinite ease-in-out;
+}
+
+.searching-indicator span:nth-child(1) {
+    background-color: #4285F4;
+    animation-delay: 0s;
+}
+
+/* Blue */
+.searching-indicator span:nth-child(2) {
+    background-color: #DB4437;
+    animation-delay: 0.1s;
+}
+
+/* Red */
+.searching-indicator span:nth-child(3) {
+    background-color: #F4B400;
+    animation-delay: 0.2s;
+}
+
+/* Yellow */
+.searching-indicator span:nth-child(4) {
+    background-color: #0F9D58;
+    animation-delay: 0.3s;
+}
+
+/* Green */
+
+@keyframes searchBounce {
+
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+
+    50% {
+        transform: translateY(-10px);
+    }
+}

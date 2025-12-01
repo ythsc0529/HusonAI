@@ -97,7 +97,11 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        appendTypingIndicator();
+        // 判斷是否顯示搜尋動畫
+        const searchKeywords = ['google', 'search', '搜尋', '查', '找', '天氣', '新聞', '股票', '匯率', '哪裡', '什麼', 'who', 'what', 'where', 'when', 'how'];
+        const isSearching = searchKeywords.some(keyword => messageText.toLowerCase().includes(keyword));
+
+        appendTypingIndicator(isSearching ? 'searching' : 'typing');
 
         // 準備要傳送的資料
         const modelMap = { 'huson2.5': '2.5', 'huson2.0': '2.0' };
@@ -221,7 +225,7 @@ document.addEventListener('DOMContentLoaded', () => {
         chatWindow.scrollTop = chatWindow.scrollHeight;
     };
 
-    const appendTypingIndicator = () => {
+    const appendTypingIndicator = (type = 'typing') => {
         const messageWrapper = document.createElement('div');
         messageWrapper.classList.add('message', 'ai-message', 'typing-indicator-wrapper');
         const avatar = document.createElement('div');
@@ -229,10 +233,27 @@ document.addEventListener('DOMContentLoaded', () => {
         avatar.textContent = 'H';
         const textContent = document.createElement('div');
         textContent.classList.add('text-content');
-        const typingIndicator = document.createElement('div');
-        typingIndicator.classList.add('typing-indicator');
-        typingIndicator.innerHTML = '<span></span><span></span><span></span>';
-        textContent.appendChild(typingIndicator);
+
+        if (type === 'searching') {
+            const searchingIndicator = document.createElement('div');
+            searchingIndicator.classList.add('searching-indicator');
+            searchingIndicator.innerHTML = '<span></span><span></span><span></span><span></span>';
+
+            const text = document.createElement('span');
+            text.style.marginLeft = '10px';
+            text.style.fontSize = '0.9rem';
+            text.style.color = 'var(--text-muted)';
+            text.textContent = '正在搜尋...';
+
+            textContent.appendChild(searchingIndicator);
+            textContent.appendChild(text);
+        } else {
+            const typingIndicator = document.createElement('div');
+            typingIndicator.classList.add('typing-indicator');
+            typingIndicator.innerHTML = '<span></span><span></span><span></span>';
+            textContent.appendChild(typingIndicator);
+        }
+
         messageWrapper.appendChild(avatar);
         messageWrapper.appendChild(textContent);
         chatWindow.appendChild(messageWrapper);
