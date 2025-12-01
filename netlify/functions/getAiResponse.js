@@ -37,7 +37,11 @@ exports.handler = async (event) => {
         console.log("[INFO] History prepared for generation (binary data included).");
 
         const modelName = modelMapping[modelKey] || 'gemini-1.5-pro-latest';
-        const model = genAI.getGenerativeModel({ model: modelName, systemInstruction: systemPrompt });
+        const model = genAI.getGenerativeModel({
+            model: modelName,
+            systemInstruction: systemPrompt,
+            tools: [{ googleSearch: {} }],
+        });
 
         // 傳入已淨化的 history
         const result = await model.generateContent({ contents: sanitizedHistory });
