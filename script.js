@@ -98,7 +98,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         // 判斷是否顯示搜尋動畫
-        const searchKeywords = ['google', 'search', '搜尋', '查', '找', '天氣', '新聞', '股票', '匯率', '哪裡', '什麼', 'who', 'what', 'where', 'when', 'how'];
+        const searchKeywords = ['google', 'search', '搜尋', '查', '找', '天氣', '新聞', '股票', '匯率', '哪裡', '什麼', 'who', 'what', 'where', 'when', 'how', '時事'];
         const isSearching = searchKeywords.some(keyword => messageText.toLowerCase().includes(keyword));
 
         appendTypingIndicator(isSearching ? 'searching' : 'typing');
