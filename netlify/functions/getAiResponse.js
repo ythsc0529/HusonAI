@@ -40,13 +40,14 @@ exports.handler = async (event) => {
 
         const modelName = modelMapping[modelKey] || 'gemini-1.5-pro-latest';
 
-        // OH3 不提供 search 支援
+        // 配置模型參數
         const modelConfig = {
             model: modelName,
-            systemInstruction: systemPrompt,
         };
 
+        // OH3 (Gemma) 不支援 systemInstruction 和 search 工具
         if (modelKey !== 'oh3') {
+            modelConfig.systemInstruction = systemPrompt;
             modelConfig.tools = [{ googleSearch: {} }];
         }
 
