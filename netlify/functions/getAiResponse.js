@@ -35,7 +35,24 @@ exports.handler = async (event) => {
 
         // --- 直接使用前端傳來的 history，包含 inlineData (base64 圖片) ---
         // 為了安全起見，還是可以做一些基本的檢查，但這裡我們直接傳遞
-        const sanitizedHistory = history;
+        let sanitizedHistory = history;
+
+        // OH3 (Gemma) 不支援 systemInstruction，改用對話歷史注入
+        if (modelKey === 'oh3' && history.length > 0 && history[0].role === 'user') {
+            // 在第一條 user 訊息前插入系統提示作為對話的開頭
+            sanitizedHistory = [
+                {
+                    role: 'user',
+                    parts: [{ text: systemPrompt }]
+                },
+                {
+                    role: 'model',
+                    parts: [{ text: '好的，我了解了！我會以 Huson 的身份，用台灣人的口語風格來回答問題。' }]
+                },
+                ...history
+            ];
+        }
+
         console.log("[INFO] History prepared for generation (binary data included).");
 
         const modelName = modelMapping[modelKey] || 'gemini-1.5-pro-latest';
