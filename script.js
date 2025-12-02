@@ -97,9 +97,15 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
+<<<<<<< HEAD
         // 判斷是否顯示搜尋動畫 (OH3 不支援搜尋)
         const searchKeywords = ['股市', 'google', 'search', '搜尋', '查', '找', '天氣', '新聞', '股票', '匯率', '哪裡', '什麼', 'who', 'what', 'where', 'when', 'how', '時事'];
         const isSearching = currentChatId !== 'oh3' && searchKeywords.some(keyword => messageText.toLowerCase().includes(keyword));
+=======
+        // 判斷是否顯示搜尋動畫
+        const searchKeywords = ['股市', 'google', 'search', '搜尋', '查', '找', '天氣', '新聞', '股票', '匯率', '哪裡', '什麼', 'who', 'what', 'where', 'when', 'how', '時事','誰','介紹'];
+        const isSearching = searchKeywords.some(keyword => messageText.toLowerCase().includes(keyword));
+>>>>>>> 05eefd92dd578c7126c51e707dd8a15a3484c758
 
         appendTypingIndicator(isSearching ? 'searching' : 'typing');
 
