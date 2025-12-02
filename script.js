@@ -314,7 +314,8 @@ document.addEventListener('DOMContentLoaded', () => {
         recognition.onend = () => voiceInputBtn.classList.remove('recording');
         recognition.onresult = (event) => {
             messageInput.value = event.results[0][0].transcript;
-            sendMessage();
+            // 不自動傳送訊息，讓使用者可以先檢視和編輯
+            messageInput.focus(); // 聚焦到輸入框方便使用者檢視
         };
         recognition.onerror = (event) => {
             if (event.error !== 'no-speech') {
