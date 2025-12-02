@@ -287,8 +287,24 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     sendBtn.addEventListener('click', sendMessage);
+
+    // 檢測是否為行動裝置
+    const isMobileDevice = () => {
+        return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+            || window.innerWidth <= 768;
+    };
+
     messageInput.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+        if (e.key === 'Enter' && !e.shiftKey) {
+            // 如果是手機裝置，允許換行（不攔截預設行為）
+            if (isMobileDevice()) {
+                // 不做任何事，讓 Enter 執行預設的換行行為
+                return;
+            }
+            // 電腦版：Enter 傳送訊息
+            e.preventDefault();
+            sendMessage();
+        }
     });
 
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
