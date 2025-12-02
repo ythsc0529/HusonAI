@@ -223,7 +223,21 @@ document.addEventListener('DOMContentLoaded', () => {
                 textContent.appendChild(p);
             }
         } else {
+            // AI 訊息：先用 marked 解析，然後渲染數學公式
             textContent.innerHTML = marked.parse(text);
+
+            // 使用 KaTeX 渲染數學公式
+            if (window.renderMathInElement) {
+                renderMathInElement(textContent, {
+                    delimiters: [
+                        { left: '$$', right: '$$', display: true },
+                        { left: '$', right: '$', display: false },
+                        { left: '\\[', right: '\\]', display: true },
+                        { left: '\\(', right: '\\)', display: false }
+                    ],
+                    throwOnError: false
+                });
+            }
         }
         messageWrapper.appendChild(avatar);
         messageWrapper.appendChild(textContent);
