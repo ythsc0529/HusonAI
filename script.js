@@ -97,14 +97,14 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        // 判斷是否顯示搜尋動畫
+        // 判斷是否顯示搜尋動畫 (OH3 不支援搜尋)
         const searchKeywords = ['股市', 'google', 'search', '搜尋', '查', '找', '天氣', '新聞', '股票', '匯率', '哪裡', '什麼', 'who', 'what', 'where', 'when', 'how', '時事'];
-        const isSearching = searchKeywords.some(keyword => messageText.toLowerCase().includes(keyword));
+        const isSearching = currentChatId !== 'oh3' && searchKeywords.some(keyword => messageText.toLowerCase().includes(keyword));
 
         appendTypingIndicator(isSearching ? 'searching' : 'typing');
 
         // 準備要傳送的資料
-        const modelMap = { 'huson2.5': '2.5', 'huson2.0': '2.0' };
+        const modelMap = { 'huson2.5': '2.5', 'huson2.0': '2.0', 'oh3': 'oh3' };
         const payload = {
             history: conversationHistory,
             model: modelMap[currentChatId]
@@ -144,11 +144,15 @@ document.addEventListener('DOMContentLoaded', () => {
             let notificationMessage = error.message;
 
             if (currentChatId === 'huson2.5') {
-                const suggestion = '\n\n💡 建議：您可以嘗試使用「Huson 3.0 mini」模型，或是重新整理網頁再試一次。';
+                const suggestion = '\n\n💡 建議：您可以嘗試使用「Huson 3.0 mini」或「OH3」模型，或是重新整理網頁再試一次。';
                 errorMessage += suggestion;
-                notificationMessage += ' (建議嘗試 Mini 模型或重整網頁)';
+                notificationMessage += ' (建議嘗試 Mini 或 OH3 模型或重整網頁)';
             } else if (currentChatId === 'huson2.0') {
-                const suggestion = '\n\n💡 建議：您可以嘗試重新整理網頁再試一次。';
+                const suggestion = '\n\n💡 建議：您可以嘗試使用「OH3」模型，或是重新整理網頁再試一次。';
+                errorMessage += suggestion;
+                notificationMessage += ' (建議嘗試 OH3 模型或重整網頁)';
+            } else if (currentChatId === 'oh3') {
+                const suggestion = '\n\n💡 建議：請嘗試重新整理網頁再試一次。';
                 errorMessage += suggestion;
                 notificationMessage += ' (建議重整網頁)';
             }
@@ -165,6 +169,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const titles = {
             'huson2.5': 'Huson 3.0 pro',
             'huson2.0': 'Huson 3.0 mini',
+            'oh3': 'OH3',
             'studio': '隨便你工作室 💬'
         };
         chatTitle.textContent = titles[chatId];
@@ -177,6 +182,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const initialMessages = {
             'huson2.5': '你好，我是 Huson 3.0 pro，專門處理複雜問題的。請講。🧐',
             'huson2.0': '哈囉！我是 Huson 3.0 mini，地表最快的啦！有啥問題，儘管問！😎',
+            'oh3': '嗨！我是 OH3，最輕量化的模型。我可能沒那麼聰明，但我會盡力回答你的問題！🪶',
             'studio': '您好，這裡是「隨便你工作室」，請問有什麼可以為您服務的？'
         };
         const welcomeText = initialMessages[chatId];
