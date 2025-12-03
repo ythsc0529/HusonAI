@@ -101,7 +101,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const searchKeywords = ['股市', 'google', 'search', '搜尋', '查', '找', '天氣', '新聞', '股票', '匯率', '哪裡', '什麼', 'who', 'what', 'where', 'when', 'how', '時事'];
         const isSearching = currentChatId !== 'oh3' && searchKeywords.some(keyword => messageText.toLowerCase().includes(keyword));
 
-        appendTypingIndicator(isSearching ? 'searching' : 'typing');
+        // 如果有圖片，顯示更詳細的處理提示
+        const processingType = imageData ? 'processing-image' : (isSearching ? 'searching' : 'typing');
+        appendTypingIndicator(processingType);
 
         // 準備要傳送的資料
         const modelMap = { 'huson2.5': '2.5', 'huson2.0': '2.0', 'oh3': 'oh3' };
@@ -113,22 +115,58 @@ document.addEventListener('DOMContentLoaded', () => {
         // 移除會 stringify 完整 payload（可能含大量資料）的日誌，改為簡短日誌
         console.log("Prepared payload (no binary included). Model:", payload.model);
 
+        // 創建帶有超時的 fetch 函數
+        const fetchWithTimeout = (url, options, timeout = 60000) => {
+            return Promise.race([
+                fetch(url, options),
+                new Promise((_, reject) =>
+                    setTimeout(() => reject(new Error('請求超時：AI 分析時間過長')), timeout)
+                )
+            ]);
+        };
+
+        // 重試函數
+        const fetchWithRetry = async (maxRetries = 2) => {
+            let lastError;
+            for (let i = 0; i < maxRetries; i++) {
+                try {
+                    if (i > 0) {
+                        console.log(`重試第 ${i} 次...`);
+                        // 更新指示器顯示重試狀態
+                        removeTypingIndicator();
+                        appendTypingIndicator('retrying');
+                    }
+
+                    const response = await fetchWithTimeout('/.netlify/functions/getAiResponse', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload),
+                    }, 60000); // 60 秒超時
+
+                    if (!response.ok) {
+                        const errorData = await response.json();
+                        throw new Error(errorData.error || `HTTP 狀態碼: ${response.status}`);
+                    }
+
+                    return await response.json();
+                } catch (error) {
+                    lastError = error;
+                    console.error(`嘗試 ${i + 1} 失敗:`, error.message);
+
+                    // 如果不是最後一次重試，等待一下再重試
+                    if (i < maxRetries - 1) {
+                        await new Promise(resolve => setTimeout(resolve, 2000)); // 等待 2 秒
+                    }
+                }
+            }
+            throw lastError;
+        };
+
         try {
             // 禁用送出按鈕以避免重複送出
             sendBtn.disabled = true;
 
-            const response = await fetch('/.netlify/functions/getAiResponse', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload),
-            });
-
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.error || `HTTP 狀態碼: ${response.status}`);
-            }
-
-            const data = await response.json();
+            const data = await fetchWithRetry(imageData ? 3 : 2); // 如果有圖片，多重試一次
             const aiResponse = data.response;
 
             conversationHistory.push({ role: 'model', parts: [{ text: aiResponse }] });
@@ -143,7 +181,18 @@ document.addEventListener('DOMContentLoaded', () => {
             let errorMessage = `哎呀，好像出錯了捏... 歹勢啦！😥\n錯誤訊息: ${error.message}`;
             let notificationMessage = error.message;
 
-            if (currentChatId === 'huson2.5') {
+            // 針對超時錯誤提供特別建議
+            const isTimeout = error.message.includes('超時') || error.message.includes('timeout');
+
+            if (isTimeout) {
+                if (imageData) {
+                    errorMessage += '\n\n💡 圖片分析超時建議：\n1. 圖片已自動壓縮，但仍可能太複雜\n2. 嘗試使用「Huson 3.0 mini」或「OH3」模型（處理速度較快）\n3. 稍後再試一次';
+                    notificationMessage += ' (圖片分析超時，建議使用 Mini 或 OH3 模型)';
+                } else {
+                    errorMessage += '\n\n💡 處理超時建議：\n1. 嘗試簡化您的問題\n2. 稍後再試一次';
+                    notificationMessage += ' (處理超時，建議稍後再試)';
+                }
+            } else if (currentChatId === 'huson2.5') {
                 const suggestion = '\n\n💡 建議：您可以嘗試使用「Huson 3.0 mini」或「OH3」模型，或是重新整理網頁再試一次。';
                 errorMessage += suggestion;
                 notificationMessage += ' (建議嘗試 Mini 或 OH3 模型或重整網頁)';
@@ -267,6 +316,32 @@ document.addEventListener('DOMContentLoaded', () => {
 
             textContent.appendChild(searchingIndicator);
             textContent.appendChild(text);
+        } else if (type === 'processing-image') {
+            const processingIndicator = document.createElement('div');
+            processingIndicator.classList.add('searching-indicator');
+            processingIndicator.innerHTML = '<span></span><span></span><span></span><span></span>';
+
+            const text = document.createElement('span');
+            text.style.marginLeft = '10px';
+            text.style.fontSize = '0.9rem';
+            text.style.color = 'var(--text-muted)';
+            text.textContent = '正在分析圖片...';
+
+            textContent.appendChild(processingIndicator);
+            textContent.appendChild(text);
+        } else if (type === 'retrying') {
+            const retryingIndicator = document.createElement('div');
+            retryingIndicator.classList.add('searching-indicator');
+            retryingIndicator.innerHTML = '<span></span><span></span><span></span><span></span>';
+
+            const text = document.createElement('span');
+            text.style.marginLeft = '10px';
+            text.style.fontSize = '0.9rem';
+            text.style.color = '#ff9500';
+            text.textContent = '重新嘗試中...';
+
+            textContent.appendChild(retryingIndicator);
+            textContent.appendChild(text);
         } else {
             const typingIndicator = document.createElement('div');
             typingIndicator.classList.add('typing-indicator');
@@ -372,11 +447,12 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         try {
-            // 壓縮圖片
+            // 壓縮圖片（為了加快 AI 處理速度，降低圖片大小）
             const options = {
-                maxSizeMB: 1,
-                maxWidthOrHeight: 1024,
-                useWebWorker: true
+                maxSizeMB: 0.8,
+                maxWidthOrHeight: 800,
+                useWebWorker: true,
+                initialQuality: 0.8
             };
 
             let compressedFile = file;
