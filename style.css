@@ -462,6 +462,8 @@ body {
     border-top-right-radius: 4px;
     color: white;
     box-shadow: 0 4px 15px rgba(var(--primary-hue), 90%, 60%, 0.3);
+    white-space: pre-wrap;
+    /* 保留換行和空格 */
 }
 
 .chat-input-area {

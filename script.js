@@ -268,7 +268,8 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             if (text) {
                 const p = document.createElement('p');
-                p.textContent = text;
+                // 將換行符號轉換為 <br> 標籤以保留換行
+                p.innerHTML = text.replace(/\n/g, '<br>');
                 textContent.appendChild(p);
             }
         } else {
