@@ -403,6 +403,15 @@ body {
     opacity: 0;
     transform: translateY(20px);
     animation: messagePop 0.4s var(--ease-out) forwards;
+    position: relative;
+}
+
+/* 確保訊息文字可以被選取 */
+.message * {
+    user-select: text;
+    -webkit-user-select: text;
+    -moz-user-select: text;
+    -ms-user-select: text;
 }
 
 @keyframes messagePop {
@@ -1180,4 +1189,78 @@ body {
 .text-content img {
     max-width: 100%;
     height: auto;
+}
+
+/* ===== Message Copy Button ===== */
+.copy-btn {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: rgba(255, 255, 255, 0.8);
+    border-radius: 6px;
+    padding: 6px 10px;
+    font-size: 0.75rem;
+    cursor: pointer;
+    opacity: 0;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    z-index: 10;
+}
+
+.copy-btn i {
+    font-size: 0.8rem;
+}
+
+.message:hover .copy-btn {
+    opacity: 1;
+}
+
+.copy-btn:hover {
+    background: rgba(0, 0, 0, 0.6);
+    color: #fff;
+    border-color: rgba(255, 255, 255, 0.3);
+    transform: scale(1.05);
+}
+
+.copy-btn:active {
+    transform: scale(0.95);
+}
+
+.copy-btn.copied {
+    background: rgba(16, 185, 129, 0.8);
+    border-color: rgba(16, 185, 129, 1);
+    color: #fff;
+}
+
+@keyframes checkmark {
+    0% {
+        transform: scale(0);
+    }
+
+    50% {
+        transform: scale(1.2);
+    }
+
+    100% {
+        transform: scale(1);
+    }
+}
+
+.copy-btn.copied i {
+    animation: checkmark 0.3s ease-out;
+}
+
+/* 手機版調整複製按鈕 */
+@media (max-width: 768px) {
+    .copy-btn {
+        opacity: 1;
+        padding: 5px 8px;
+        font-size: 0.7rem;
+    }
 }

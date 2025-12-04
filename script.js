@@ -289,8 +289,48 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
             }
         }
+
+        // 添加複製按鈕
+        const copyBtn = document.createElement('button');
+        copyBtn.classList.add('copy-btn');
+        copyBtn.innerHTML = '<i class="fas fa-copy"></i> 複製';
+        copyBtn.setAttribute('title', '複製訊息');
+
+        copyBtn.addEventListener('click', async (e) => {
+            e.stopPropagation(); // 防止觸發其他事件
+
+            try {
+                // 提取純文字（移除 HTML 標籤）
+                let textToCopy = text;
+                if (sender === 'ai') {
+                    // 對於 AI 訊息，從 DOM 中提取純文字
+                    textToCopy = textContent.innerText || textContent.textContent;
+                }
+
+                // 複製到剪貼簿
+                await navigator.clipboard.writeText(textToCopy);
+
+                // 視覺反饋
+                copyBtn.classList.add('copied');
+                copyBtn.innerHTML = '<i class="fas fa-check"></i> 已複製';
+
+                // 顯示通知
+                showNotification('複製成功', '訊息已複製到剪貼簿', 'success');
+
+                // 2 秒後恢復原狀
+                setTimeout(() => {
+                    copyBtn.classList.remove('copied');
+                    copyBtn.innerHTML = '<i class="fas fa-copy"></i> 複製';
+                }, 2000);
+            } catch (error) {
+                console.error('複製失敗:', error);
+                showNotification('複製失敗', '無法複製訊息，請手動選取文字', 'error');
+            }
+        });
+
         messageWrapper.appendChild(avatar);
         messageWrapper.appendChild(textContent);
+        messageWrapper.appendChild(copyBtn); // 添加複製按鈕
         chatWindow.appendChild(messageWrapper);
         chatWindow.scrollTop = chatWindow.scrollHeight;
     };
