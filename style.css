@@ -141,6 +141,7 @@ body {
     transition: opacity 0.5s var(--ease-out), transform 0.5s var(--ease-out), visibility 0.5s;
     padding: 20px;
     overflow-y: auto;
+    overflow-x: hidden;
     /* Allow vertical scrolling within the page */
     -webkit-overflow-scrolling: touch;
     /* Smooth scrolling on iOS */
@@ -158,6 +159,7 @@ body {
     width: 100%;
     text-align: center;
     z-index: 1;
+    padding: 20px 0;
 }
 
 .selection-header {
@@ -464,6 +466,7 @@ body {
 
 .chat-input-area {
     padding: 20px 30px;
+    padding-bottom: calc(20px + env(safe-area-inset-bottom));
     background: rgba(0, 0, 0, 0.2);
     border-top: 1px solid var(--glass-border);
     flex-shrink: 0;
@@ -705,6 +708,14 @@ body {
     /* 選擇頁面調整 */
     .page {
         padding: 10px;
+        padding-top: max(10px, env(safe-area-inset-top));
+        padding-bottom: max(10px, env(safe-area-inset-bottom));
+    }
+
+    /* 選擇頁面容器 - 從上到下對齊 */
+    #selection-page {
+        align-items: flex-start;
+        padding-top: 20px;
     }
 
     .selection-header {
@@ -781,6 +792,7 @@ body {
     /* 輸入區域調整 */
     .chat-input-area {
         padding: 10px;
+        padding-bottom: calc(10px + env(safe-area-inset-bottom));
     }
 
     .input-wrapper {
