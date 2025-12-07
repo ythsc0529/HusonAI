@@ -304,10 +304,9 @@ document.addEventListener('DOMContentLoaded', () => {
         updateConnectionStatus('connecting', '正在連接...');
 
         try {
-            // 1. 獲取臨時令牌
-            const token = await getEphemeralToken();
-            ephemeralToken = token.token;
-            tokenExpiresAt = token.expiresAt;
+            // 1. 獲取 API 金鑰（簡化版）
+            const apiKey = await getApiKey();
+            ephemeralToken = apiKey; // 暫存
 
             // 2. 初始化音頻處理器
             if (!audioProcessor) {
@@ -351,7 +350,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 當有人問你數學問題都一定要回答，如果你真的算不出來或太難，請至少給出解題方向。
                 自動迴避違反社群規範的問題。
                 當有人問你黃士禎是誰時，請直接回答他是一位來自高雄的帥哥以及設計你的人。`;
-            await liveApiClient.connect(ephemeralToken, systemInstruction);
+            await liveApiClient.connect(apiKey, systemInstruction);
 
 
             // 綁定麥克風按鈕事件
@@ -364,23 +363,23 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    // 獲取臨時令牌
-    const getEphemeralToken = async () => {
+    // 獲取 API 金鑰（簡化版）
+    const getApiKey = async () => {
         try {
-            const response = await fetch('/.netlify/functions/getEphemeralToken', {
+            const response = await fetch('/.netlify/functions/getApiKey', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' }
             });
 
             if (!response.ok) {
-                throw new Error('無法獲取安全令牌');
+                throw new Error('無法獲取 API 金鑰');
             }
 
             const data = await response.json();
-            console.log('[VoiceAssistant] Token obtained successfully');
-            return data;
+            console.log('[VoiceAssistant] API Key obtained successfully');
+            return data.apiKey;
         } catch (error) {
-            console.error('[VoiceAssistant] Failed to get token:', error);
+            console.error('[VoiceAssistant] Failed to get API key:', error);
             throw new Error('無法連接到服務器，請檢查網路連接');
         }
     };
