@@ -254,7 +254,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // 載入語音助理模式
     const loadVoiceAssistant = async () => {
         isVoiceMode = true;
-        chatTitle.textContent = '語音助理 🎙️';
+        chatTitle.textContent = 'Huson語音模型plus 🎙️';
         chatWindow.innerHTML = '';
 
         // 創建語音助理 UI
