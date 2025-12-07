@@ -1273,3 +1273,113 @@ body {
         margin-bottom: 32px;
     }
 }
+/* ===== 語音助理專用樣式 ===== */
+.voice-assistant-mode {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    flex: 1;
+    padding: 40px;
+    gap: 30px;
+}
+
+.connection-status {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.9rem;
+    color: var(--text-muted);
+    padding: 8px 16px;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: var(--radius-full);
+    border: 1px solid var(--glass-border);
+}
+
+.connection-status .status-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #ef4444;
+}
+
+.connection-status.connected .status-dot {
+    background: #10b981;
+}
+
+.connection-status.connecting .status-dot {
+    background: #f59e0b;
+    animation: pulse 1.5s infinite;
+}
+
+.mic-button {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 3rem;
+    color: white;
+    box-shadow: 0 8px 32px rgba(var(--primary-hue), 90%, 60%, 0.4);
+    transition: all 0.3s var(--ease-out);
+}
+
+.mic-button:hover {
+    transform: scale(1.05);
+}
+
+.mic-button.recording {
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+    animation: pulse-recording 2s infinite;
+}
+
+@keyframes pulse-recording {
+    0%, 100% { box-shadow: 0 8px 32px rgba(239, 68, 68, 0.4); }
+    50% { box-shadow: 0 8px 40px rgba(239, 68, 68, 0.8); }
+}
+
+.mic-button.speaking {
+    background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+}
+
+.audio-visualizer {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    height: 60px;
+}
+
+.audio-visualizer .bar {
+    width: 4px;
+    background: var(--primary-color);
+    border-radius: 2px;
+    height: 20px;
+}
+
+.audio-visualizer.active .bar {
+    animation: wave 1s ease-in-out infinite;
+}
+
+@keyframes wave {
+    0%, 100% { height: 20px; }
+    50% { height: 50px; }
+}
+
+.voice-hint {
+    text-align: center;
+    max-width: 400px;
+}
+
+.voice-hint h3 {
+    font-size: 1.5rem;
+    margin-bottom: 8px;
+}
+
+.voice-hint p {
+    color: var(--text-muted);
+    font-size: 0.95rem;
+}

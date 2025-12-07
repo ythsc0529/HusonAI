@@ -50,6 +50,13 @@ document.addEventListener('DOMContentLoaded', () => {
     let conversationHistory = [];
     let imageData = null;
 
+    // 語音助理相關變數
+    let audioProcessor = null;
+    let liveApiClient = null;
+    let isVoiceMode = false;
+    let ephemeralToken = null;
+    let tokenExpiresAt = null;
+
     const sendMessage = async () => {
         const messageText = messageInput.value.trim();
 
@@ -215,6 +222,12 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     const loadChat = (chatId) => {
+        // 檢查是否為語音助理模式
+        if (chatId === 'voice-assistant') {
+            loadVoiceAssistant();
+            return;
+        }
+
         const titles = {
             'huson2.5': 'Huson 3.0 pro',
             'huson2.0': 'Huson 3.0 mini',
@@ -236,6 +249,200 @@ document.addEventListener('DOMContentLoaded', () => {
         };
         const welcomeText = initialMessages[chatId];
         appendMessage('ai', welcomeText, null, null, false);
+    };
+
+    // 載入語音助理模式
+    const loadVoiceAssistant = async () => {
+        isVoiceMode = true;
+        chatTitle.textContent = '語音助理 🎙️';
+        chatWindow.innerHTML = '';
+
+        // 創建語音助理 UI
+        const voiceUI = document.createElement('div');
+        voiceUI.classList.add('voice-assistant-mode');
+        voiceUI.innerHTML = `
+            <div class="connection-status" id="connection-status">
+                <span class="status-dot"></span>
+                <span>未連接</span>
+            </div>
+            <div class="mic-button-container">
+                <button class="mic-button" id="voice-mic-btn">
+                    <i class="fas fa-microphone"></i>
+                </button>
+            </div>
+            <div class="audio-visualizer" id="audio-visualizer">
+                <div class="bar"></div>
+                <div class="bar"></div>
+                <div class="bar"></div>
+                <div class="bar"></div>
+                <div class="bar"></div>
+            </div>
+            <div class="voice-hint">
+                <h3>點擊麥克風開始對話</h3>
+                <p>即時語音互動，自然流暢的對話體驗</p>
+            </div>
+        `;
+        chatWindow.appendChild(voiceUI);
+
+        // 初始化語音助理
+        try {
+            await initVoiceAssistant();
+        } catch (error) {
+            console.error('語音助理初始化失敗:', error);
+            showNotification('初始化失敗', error.message, 'error');
+        }
+    };
+
+    // 初始化語音助理
+    const initVoiceAssistant = async () => {
+        const statusEl = document.getElementById('connection-status');
+        const micBtn = document.getElementById('voice-mic-btn');
+
+        if (!micBtn) return;
+
+        // 更新狀態為連接中
+        updateConnectionStatus('connecting', '正在連接...');
+
+        try {
+            // 1. 獲取臨時令牌
+            const token = await getEphemeralToken();
+            ephemeralToken = token.token;
+            tokenExpiresAt = token.expiresAt;
+
+            // 2. 初始化音頻處理器
+            if (!audioProcessor) {
+                audioProcessor = new window.AudioProcessor();
+                await audioProcessor.initialize();
+            }
+
+            // 3. 初始化 WebSocket 客戶端
+            if (!liveApiClient) {
+                liveApiClient = new window.LiveAPIClient();
+            }
+
+            // 設定回調函數
+            liveApiClient.onOpen = () => {
+                console.log('[VoiceAssistant] Connected successfully');
+                updateConnectionStatus('connected', '已連接');
+            };
+
+            liveApiClient.onMessage = handleLiveAPIMessage;
+
+            liveApiClient.onError = (error) => {
+                console.error('[VoiceAssistant] Error:', error);
+                showNotification('連接錯誤', '語音連接發生錯誤', 'error');
+            };
+
+            liveApiClient.onClose = () => {
+                console.log('[VoiceAssistant] Connection closed');
+                updateConnectionStatus('disconnected', '連接已斷開');
+                if (audioProcessor) {
+                    audioProcessor.stopCapture();
+                }
+            };
+
+            // 連接到 Gemini Live API
+            const systemInstruction = `你是一個叫做「Huson」的 AI 語音助理，你是由一位叫做「黃士禎」的台灣人設計及訓練的。使用輕鬆、友善的台灣口語回答問題，適當加入 emoji。`;
+            await liveApiClient.connect(ephemeralToken, systemInstruction);
+
+            // 綁定麥克風按鈕事件
+            micBtn.addEventListener('click', toggleVoiceRecording);
+
+        } catch (error) {
+            console.error('[VoiceAssistant] Initialization failed:', error);
+            updateConnectionStatus('error', '連接失敗');
+            throw error;
+        }
+    };
+
+    // 獲取臨時令牌
+    const getEphemeralToken = async () => {
+        try {
+            const response = await fetch('/.netlify/functions/getEphemeralToken', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            });
+
+            if (!response.ok) {
+                throw new Error('無法獲取安全令牌');
+            }
+
+            const data = await response.json();
+            console.log('[VoiceAssistant] Token obtained successfully');
+            return data;
+        } catch (error) {
+            console.error('[VoiceAssistant] Failed to get token:', error);
+            throw new Error('無法連接到服務器，請檢查網路連接');
+        }
+    };
+
+    // 切換語音錄製
+    const toggleVoiceRecording = async () => {
+        const micBtn = document.getElementById('voice-mic-btn');
+        const visualizer = document.getElementById('audio-visualizer');
+
+        if (!audioProcessor.isRecording) {
+            // 開始錄音
+            try {
+                await audioProcessor.startCapture((base64Audio) => {
+                    // 發送音頻到 Gemini Live API
+                    if (liveApiClient && liveApiClient.isConnected) {
+                        liveApiClient.sendAudio(base64Audio);
+                    }
+                });
+                micBtn.classList.add('recording');
+                visualizer.classList.add('active');
+            } catch (error) {
+                console.error('[VoiceAssistant] Failed to start recording:', error);
+                showNotification('錯誤', error.message, 'error');
+            }
+        } else {
+            // 停止錄音
+            audioProcessor.stopCapture();
+            micBtn.classList.remove('recording');
+            visualizer.classList.remove('active');
+        }
+    };
+
+    // 處理 Live API 訊息
+    const handleLiveAPIMessage = (message) => {
+        const micBtn = document.getElementById('voice-mic-btn');
+
+        // 處理 AI 音頻回應
+        if (message.serverContent && message.serverContent.modelTurn) {
+            const parts = message.serverContent.modelTurn.parts;
+            if (parts) {
+                parts.forEach(part => {
+                    if (part.inlineData && part.inlineData.data) {
+                        // 播放 AI 回應的音頻
+                        micBtn.classList.add('speaking');
+                        audioProcessor.playPCMAudio(part.inlineData.data);
+                        setTimeout(() => {
+                            micBtn.classList.remove('speaking');
+                        }, 2000);
+                    }
+                });
+            }
+        }
+
+        // 處理中斷
+        if (message.serverContent && message.serverContent.interrupted) {
+            console.log('[VoiceAssistant] Interrupted');
+        }
+    };
+
+    // 更新連接狀態
+    const updateConnectionStatus = (status, text) => {
+        const statusEl = document.getElementById('connection-status');
+        if (!statusEl) return;
+
+        statusEl.className = 'connection-status';
+        if (status === 'connected') {
+            statusEl.classList.add('connected');
+        } else if (status === 'connecting') {
+            statusEl.classList.add('connecting');
+        }
+        statusEl.querySelector('span:last-child').textContent = text;
     };
 
     const saveHistory = () => {
