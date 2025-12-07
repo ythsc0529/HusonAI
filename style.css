@@ -1262,5 +1262,14 @@ body {
         opacity: 1;
         padding: 5px 8px;
         font-size: 0.7rem;
+        top: auto;
+        bottom: -28px;
+        right: 0;
+        background: rgba(0, 0, 0, 0.6);
+    }
+
+    /* 為訊息添加底部空間，避免按鈕重疊到下一條訊息 */
+    .message {
+        margin-bottom: 32px;
     }
 }
