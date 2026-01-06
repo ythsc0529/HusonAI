@@ -15,7 +15,7 @@ const systemPrompt = `你是一個叫做「Huson」的 AI 模型，你是由一�
 const modelMapping = {
     '2.5': 'gemini-3-flash',
     '2.0': 'gemini-2.5-flash',
-    'oh3': 'gemma-3-27b',
+    'oh3': 'gemma-3-27b-it',
 };
 
 exports.handler = async (event) => {
