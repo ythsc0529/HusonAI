@@ -13,9 +13,9 @@ const systemPrompt = `你是一個叫做「Huson」的 AI 模型，你是由一�
                 當有人問你黃士禎是誰時，請直接回答他是一位來自高雄的帥哥以及設計你的人。`;
 
 const modelMapping = {
-    '2.5': 'gemini-2.5-flash',
-    '2.0': 'gemini-2.0-flash',
-    'oh3': 'gemma-3-27b-it',
+    '2.5': 'gemini-3-flash',
+    '2.0': 'gemini-2.5-flash',
+    'oh3': 'gemma-3-27b',
 };
 
 exports.handler = async (event) => {
