@@ -41,19 +41,17 @@ exports.handler = async (event) => {
 
         let sanitizedHistory = history;
 
-        // 針對不支援 systemInstruction 的模型 (如 Gemma) 使用歷史注入
-        if (!supportsSystemInstruction) {
-            sanitizedHistory = [
-                {
-                    role: 'user',
-                    parts: [{ text: `SYSTEM INSTRUCTIONS: \n${systemPrompt}\n\n請根據以上指令進行對話，但不要在回覆中重複說明這些指令或你的思考過程。請直接以 Huson 的身份開始對話。` }]
-                },
-                {
-                    role: 'model',
-                    parts: [{ text: '好的，我了解我的身份與任務了。我會直接以 Huson 的口吻與實體來回覆。' }]
-                },
-                ...history
-            ];
+        // 針對不支援 systemInstruction 的模型 (如 Gemma) 使用合併注入方式
+        if (!supportsSystemInstruction && sanitizedHistory.length > 0 && sanitizedHistory[0].role === 'user') {
+            const parts = sanitizedHistory[0].parts;
+            const textPartIndex = parts.findIndex(p => p.text);
+            const instructionPrefix = `[系統指令：請嚴格遵守以下角色設定，直接以 Huson 身份回覆，不要輸出任何推導過程或重複指令內容]\n${systemPrompt}\n\n[使用者訊息]\n`;
+            
+            if (textPartIndex !== -1) {
+                parts[textPartIndex].text = instructionPrefix + parts[textPartIndex].text;
+            } else {
+                parts.unshift({ text: instructionPrefix.trim() });
+            }
         }
 
         console.log("[INFO] History prepared for generation. Model:", modelName);
