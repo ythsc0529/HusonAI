@@ -67,14 +67,14 @@ h1, h2, h3 {
 }
 
 .page.active {
-    display: block; /* 改為 block 避免 flex 壓縮問題 */
+    display: block;
     opacity: 1;
 }
 
 /* ===== 選擇頁面 (Selection Page) ===== */
 .selection-container {
     max-width: 900px;
-    margin: 0 auto;
+    margin: 0 symbol auto;
     width: 100%;
 }
 
@@ -149,7 +149,7 @@ h1, h2, h3 {
 
 /* ===== 對話頁面 (Chat Page) ===== */
 #chat-page {
-    padding: 0; /* 聊天頁面不需要外部 padding */
+    padding: 0;
 }
 
 .container {
@@ -207,6 +207,7 @@ h1, h2, h3 {
     gap: 16px;
     position: relative;
     animation: fadeIn 0.5s ease;
+    padding-bottom: 28px; /* 為下方的按鈕留出空間 */
 }
 
 .avatar {
@@ -225,6 +226,7 @@ h1, h2, h3 {
 .user-message {
     align-self: flex-end;
     flex-direction: row-reverse;
+    padding-bottom: 0; /* 使用者訊息不需要底下按鈕空間 */
 }
 
 .user-message .text-content {
@@ -258,22 +260,40 @@ h1, h2, h3 {
     to { opacity: 1; transform: translateY(0); }
 }
 
-/* 複製按鈕 */
-.copy-btn {
+/* 訊息操作按鈕 (正讚、倒讚、複製) */
+.message-actions {
     position: absolute;
-    bottom: -22px;
-    right: 0;
-    font-size: 0.75rem;
-    background: none;
-    border: none;
-    color: var(--text-muted);
-    cursor: pointer;
-    opacity: 0;
-    transition: var(--transition);
+    bottom: 0;
+    left: 52px; /* 避開 AI 頭像 */
+    display: flex;
+    gap: 8px;
+    opacity: 0.8;
 }
 
-.message:hover .copy-btn {
-    opacity: 1;
+.action-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    padding: 4px 6px;
+    transition: var(--transition);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.action-btn:hover {
+    color: var(--primary-color);
+    transform: translateY(-1px);
+}
+
+.action-btn.active {
+    color: var(--accent-color);
+}
+
+.action-btn.success {
+    color: #10b981;
 }
 
 /* 輸入區域 */
@@ -371,6 +391,7 @@ textarea {
     .selection-grid { grid-template-columns: 1fr; }
     .input-wrapper { border-radius: 0; border-left: none; border-right: none; }
     .chat-input-area { padding: 12px 0 24px; }
+    .message-actions { left: 40px; }
 }
 
 /* ===== 指示器與微調 ===== */

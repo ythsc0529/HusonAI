@@ -505,47 +505,65 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        // 添加複製按鈕
-        const copyBtn = document.createElement('button');
-        copyBtn.classList.add('copy-btn');
-        copyBtn.innerHTML = '<i class="fas fa-copy"></i> 複製';
-        copyBtn.setAttribute('title', '複製訊息');
+        // 添加按鈕組 (僅限 AI 訊息)
+        if (sender === 'ai') {
+            const actionsWrapper = document.createElement('div');
+            actionsWrapper.classList.add('message-actions');
 
-        copyBtn.addEventListener('click', async (e) => {
-            e.stopPropagation(); // 防止觸發其他事件
-
-            try {
-                // 提取純文字（移除 HTML 標籤）
-                let textToCopy = text;
-                if (sender === 'ai') {
-                    // 對於 AI 訊息，從 DOM 中提取純文字
-                    textToCopy = textContent.innerText || textContent.textContent;
+            // 複製按鈕
+            const copyBtn = document.createElement('button');
+            copyBtn.classList.add('action-btn');
+            copyBtn.innerHTML = '<i class="fas fa-copy"></i>';
+            copyBtn.setAttribute('title', '複製訊息');
+            copyBtn.addEventListener('click', async (e) => {
+                e.stopPropagation();
+                try {
+                    const textToCopy = textContent.innerText || textContent.textContent;
+                    await navigator.clipboard.writeText(textToCopy);
+                    copyBtn.innerHTML = '<i class="fas fa-check"></i>';
+                    copyBtn.classList.add('success');
+                    showNotification('複製成功', '訊息已複製到剪貼簿', 'success');
+                    setTimeout(() => {
+                        copyBtn.innerHTML = '<i class="fas fa-copy"></i>';
+                        copyBtn.classList.remove('success');
+                    }, 2000);
+                } catch (err) {
+                    showNotification('複製失敗', '無法自動複製，請手動選取', 'error');
                 }
+            });
 
-                // 複製到剪貼簿
-                await navigator.clipboard.writeText(textToCopy);
+            // 正讚按鈕
+            const likeBtn = document.createElement('button');
+            likeBtn.classList.add('action-btn');
+            likeBtn.innerHTML = '<i class="far fa-thumbs-up"></i>';
+            likeBtn.setAttribute('title', '這很有幫助');
+            likeBtn.addEventListener('click', () => {
+                likeBtn.innerHTML = '<i class="fas fa-thumbs-up"></i>';
+                likeBtn.classList.toggle('active');
+                dislikeBtn.innerHTML = '<i class="far fa-thumbs-down"></i>';
+                dislikeBtn.classList.remove('active');
+            });
 
-                // 視覺反饋
-                copyBtn.classList.add('copied');
-                copyBtn.innerHTML = '<i class="fas fa-check"></i> 已複製';
+            // 倒讚按鈕
+            const dislikeBtn = document.createElement('button');
+            dislikeBtn.classList.add('action-btn');
+            dislikeBtn.innerHTML = '<i class="far fa-thumbs-down"></i>';
+            dislikeBtn.setAttribute('title', '這沒什麼幫助');
+            dislikeBtn.addEventListener('click', () => {
+                dislikeBtn.innerHTML = '<i class="fas fa-thumbs-down"></i>';
+                dislikeBtn.classList.toggle('active');
+                likeBtn.innerHTML = '<i class="far fa-thumbs-up"></i>';
+                likeBtn.classList.remove('active');
+            });
 
-                // 顯示通知
-                showNotification('複製成功', '訊息已複製到剪貼簿', 'success');
-
-                // 2 秒後恢復原狀
-                setTimeout(() => {
-                    copyBtn.classList.remove('copied');
-                    copyBtn.innerHTML = '<i class="fas fa-copy"></i> 複製';
-                }, 2000);
-            } catch (error) {
-                console.error('複製失敗:', error);
-                showNotification('複製失敗', '無法複製訊息，請手動選取文字', 'error');
-            }
-        });
+            actionsWrapper.appendChild(likeBtn);
+            actionsWrapper.appendChild(dislikeBtn);
+            actionsWrapper.appendChild(copyBtn);
+            messageWrapper.appendChild(actionsWrapper);
+        }
 
         messageWrapper.appendChild(avatar);
         messageWrapper.appendChild(textContent);
-        messageWrapper.appendChild(copyBtn); // 添加複製按鈕
         chatWindow.appendChild(messageWrapper);
         chatWindow.scrollTop = chatWindow.scrollHeight;
     };
