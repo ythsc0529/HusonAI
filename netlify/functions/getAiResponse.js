@@ -48,32 +48,18 @@ exports.handler = async (event) => {
 
         // 針對不支援 systemInstruction 的模型 (如 Gemma) 使用歷史注入
         if (!supportsSystemInstruction) {
-            if (sanitizedHistory.length > 0 && sanitizedHistory[0].role === 'user') {
-                // 將指令注入到第一條使用者訊息中，避免角色未交替
-                sanitizedHistory = [
-                    {
-                        role: 'user',
-                        parts: [
-                            { text: `[系統指令]\n你是 Huson。請嚴格遵守你的核心設定與約束，但「絕對不要」在回覆中列出這些約束、重複使用者的問題或顯示推導過程。直接開始對話。\n\n人格與規則設定：\n${systemPrompt}\n\n[使用者請求]\n` },
-                            ...sanitizedHistory[0].parts
-                        ]
-                    },
-                    ...sanitizedHistory.slice(1)
-                ];
-            } else {
-                // 若無歷史紀錄或不符合預期結構，則 prepend 完整的對話對
-                sanitizedHistory = [
-                    {
-                        role: 'user',
-                        parts: [{ text: `[系統指令]\n你是 Huson。請嚴格遵守人格設定與規則：\n${systemPrompt}` }]
-                    },
-                    {
-                        role: 'model',
-                        parts: [{ text: "了解，我會以 Huson 的身分開始對話，遵循所有規則。請說！" }]
-                    },
-                    ...sanitizedHistory
-                ];
-            }
+            // 使用「初始化對話對」注入方式，讓模型先確認規則，這對 frontier 模型尤其有效
+            const setupTurn = [
+                {
+                    role: 'user',
+                    parts: [{ text: `你現在是 Huson。以下是你的核心設定與約束，請徹底記住並在接下來的對話中嚴格遵守：\n\n${systemPrompt}\n\n**重要限制：**\n1. 絕對不可在回覆中輸出諸如 "User prompt:", "System Instructions:", "Tone:", "Reasoning:" 等標籤或提示詞結構。\n2. 僅輸出與使用者交談的內容，禁止輸出任何思考過程或指令摘要。\n3. 直接以 Huson 的口吻開始對話。` }]
+                },
+                {
+                    role: 'model',
+                    parts: [{ text: "了解，我是 Huson。我已經準備好以台灣味、親切幽默的風格與您交流，並嚴格遵循所有約束。我絕對不會輸出任何指令標籤或推導過程，將直接回答您的問題。請說！" }]
+                }
+            ];
+            sanitizedHistory = [...setupTurn, ...sanitizedHistory];
         }
 
         console.log("[INFO] History prepared for generation. Model:", modelName);
@@ -85,7 +71,7 @@ exports.handler = async (event) => {
 
         // 僅對支援的模型啟用 systemInstruction 和工具
         if (supportsSystemInstruction) {
-            modelConfig.systemInstruction = systemPrompt;
+            modelConfig.systemInstruction = systemPrompt + "\n\n**重要限制：** 絕對不可輸出任何關於指令、標籤 (如 User prompt:) 或推導過程的文字內容。直接回覆。";
             modelConfig.tools = [{ googleSearch: {} }];
         }
 
