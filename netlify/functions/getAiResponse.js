@@ -89,23 +89,38 @@ exports.handler = async (event) => {
             if (modelName.includes('gemma-4')) {
                 // gemma-4 使用 responseSchema 強制輸出 JSON，
                 // 所以 system prompt 只需要告知人設，不需要手動叮嚀格式
-                sysInstruction += "\n\n回覆時絕對不可出現指令摘要、規則標籤或使用者原句。直接給出你的回應內容。";
+                sysInstruction += "\n\n回覆時絕對不可出現指令摘要、規則標籤或使用者原句。\n\n在 thinking_steps 中，將你的思考過程以幾個步驟呈現。每個步驟需有一個簡短的 title（繁體中文）和若干個 details 細項（每項一句話）。第一個步驟通常是「理解問題」或類似，最後一個步驟是「整理回覆」或類似。";
                 // 使用 responseSchema 強制 JSON 格式（無法與 googleSearch 同時啟用）
                 modelConfig.generationConfig = {
                     responseMimeType: "application/json",
                     responseSchema: {
                         type: "object",
                         properties: {
-                            thinking: {
-                                type: "string",
-                                description: "你的內部思考推理過程（可以用任意語言自由書寫）"
+                            thinking_steps: {
+                                type: "array",
+                                description: "思考步驟列表，讓使用者可以看到你的推理過程",
+                                items: {
+                                    type: "object",
+                                    properties: {
+                                        title: {
+                                            type: "string",
+                                            description: "步驟標題，如「理解問題」、「規劃回輸」、「整理答案」"
+                                        },
+                                        details: {
+                                            type: "array",
+                                            description: "該步驟的細項註釋，每項一句簡短的說明",
+                                            items: { type: "string" }
+                                        }
+                                    },
+                                    required: ["title", "details"]
+                                }
                             },
                             final_answer: {
                                 type: "string",
                                 description: "呈現給使用者的最終回覆，使用台灣繁體中文，帶台灣味語助詞與 emoji"
                             }
                         },
-                        required: ["final_answer"]
+                        required: ["thinking_steps", "final_answer"]
                     }
                 };
             } else {
@@ -127,13 +142,13 @@ exports.handler = async (event) => {
         let text = response.text();
 
         // 針對 gemma-4：使用 responseSchema 時，模型輸出必為合法 JSON，直接 parse
-        let thinkingText = null;
+        let thinkingSteps = null;
         if (modelName.includes('gemma-4')) {
             try {
                 const parsed = JSON.parse(text);
-                // 若 schema 中有 thinking 欄位，將其抽出作為思考過程
-                if (parsed.thinking && parsed.thinking.trim().length > 0) {
-                    thinkingText = parsed.thinking.trim();
+                // 擷取結構化思考步驟
+                if (Array.isArray(parsed.thinking_steps) && parsed.thinking_steps.length > 0) {
+                    thinkingSteps = parsed.thinking_steps;
                 }
                 text = parsed.final_answer || text;
             } catch (parseErr) {
@@ -142,9 +157,6 @@ exports.handler = async (event) => {
                 const jsonRegex = /\{[\s\S]*?"final_answer"\s*:\s*"([\s\S]*?)"\s*\}/;
                 const match = text.match(jsonRegex);
                 if (match && match[1]) {
-                    const jsonStartIdx = text.indexOf(match[0]);
-                    const rawThinking = text.substring(0, jsonStartIdx).trim();
-                    if (rawThinking.length > 0) thinkingText = rawThinking;
                     text = match[1].replace(/\\n/g, '\n').replace(/\\"/g, '"');
                 }
             }
@@ -164,12 +176,12 @@ exports.handler = async (event) => {
             }
         }
 
-        console.log(`[SUCCESS] AI response generated successfully. Thinking: ${thinkingSeconds}s`);
+        console.log(`[SUCCESS] AI response generated successfully. Thinking: ${thinkingSeconds}s, Steps: ${thinkingSteps ? thinkingSteps.length : 0}`);
         return {
             statusCode: 200,
             body: JSON.stringify({
                 response: text,
-                thinking: thinkingText,
+                thinkingSteps: thinkingSteps,
                 thinkingSeconds: parseFloat(thinkingSeconds)
             }),
         };

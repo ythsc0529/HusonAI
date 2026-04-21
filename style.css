@@ -541,19 +541,102 @@ textarea {
 .thinking-block[open] .thinking-chevron {
     transform: rotate(180deg);
 }
-
-.thinking-content {
-    padding: 12px 16px;
-    font-size: 0.85rem;
-    color: var(--text-muted);
+/* ===== 思考區塊內部：步驟列表容器 ===== */
+.thinking-steps-container {
+    padding: 6px 0 4px;
     border-top: 1px solid var(--border-color);
-    line-height: 1.7;
-    max-height: 300px;
-    overflow-y: auto;
-    font-family: var(--font-body);
-    white-space: pre-wrap;
 }
 
-.thinking-content em {
+/* 每個思考步驟 */
+.thinking-step {
+    border-bottom: 1px solid rgba(0,0,0,0.05);
+}
+.thinking-step:last-child {
+    border-bottom: none;
+}
+
+/* 步驟可折疊的 summary 列 */
+.thinking-step-details {
+    /* 繼承 details 的原生行為 */
+}
+
+.thinking-step-summary {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 14px;
+    cursor: pointer;
+    list-style: none;
+    user-select: none;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    transition: background 0.15s ease;
+}
+.thinking-step-summary::-webkit-details-marker { display: none; }
+.thinking-step-summary:hover {
+    background: rgba(197, 165, 114, 0.06);
+}
+
+/* 步驟序號小徽章 */
+.step-index {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: var(--accent-color);
+    color: #fff;
+    font-size: 0.7rem;
+    font-weight: 700;
+    flex-shrink: 0;
+    opacity: 0.85;
+}
+
+.step-title {
+    flex: 1;
+    font-weight: 500;
+    color: var(--text-main);
+}
+
+.step-chevron {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    transition: transform 0.25s ease;
+}
+.thinking-step-details[open] .step-chevron {
+    transform: rotate(180deg);
+}
+
+/* 步驟細項列表 */
+.thinking-step-items {
+    list-style: none;
+    padding: 2px 14px 10px 44px;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+.thinking-step-items li {
+    font-size: 0.82rem;
+    color: var(--text-muted);
+    line-height: 1.6;
+    position: relative;
+    padding-left: 14px;
+}
+.thinking-step-items li::before {
+    content: '·';
+    position: absolute;
+    left: 0;
+    color: var(--accent-color);
+    font-weight: 700;
+}
+
+.thinking-empty {
+    font-size: 0.82rem;
+    color: var(--text-muted);
     opacity: 0.6;
+    padding: 10px 14px;
+    font-style: italic;
+    margin: 0;
 }

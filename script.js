@@ -189,9 +189,9 @@ document.addEventListener('DOMContentLoaded', () => {
             conversationHistory.push({ role: 'model', parts: [{ text: aiResponse }] });
             saveHistory();
             removeTypingIndicator();
-            // 若是 Pro 模型，傳入思考數據
-            const thinkingData = (currentChatId === 'huson2.5' && (data.thinking || data.thinkingSeconds))
-                ? { thinking: data.thinking, seconds: data.thinkingSeconds }
+            // 若是 Pro 模型，傳入結構化思考步驟
+            const thinkingData = (currentChatId === 'huson2.5' && data.thinkingSeconds)
+                ? { steps: data.thinkingSteps, seconds: data.thinkingSeconds }
                 : null;
             appendMessage('ai', aiResponse, true, null, thinkingData);
 
@@ -519,15 +519,49 @@ document.addEventListener('DOMContentLoaded', () => {
                 summary.innerHTML = `<span>已思考 ${sec} 秒</span><i class="fas fa-chevron-down thinking-chevron"></i>`;
                 details.appendChild(summary);
 
-                const thinkingContent = document.createElement('div');
-                thinkingContent.classList.add('thinking-content');
-                if (thinkingData.thinking) {
-                    // 用 marked 解析思考內容
-                    thinkingContent.innerHTML = marked.parse(thinkingData.thinking);
+                const stepsContainer = document.createElement('div');
+                stepsContainer.classList.add('thinking-steps-container');
+
+                const steps = thinkingData.steps;
+                if (Array.isArray(steps) && steps.length > 0) {
+                    steps.forEach((step, idx) => {
+                        const stepEl = document.createElement('div');
+                        stepEl.classList.add('thinking-step');
+
+                        // 每個步驟也是可折疊的 details
+                        const stepDetails = document.createElement('details');
+                        stepDetails.classList.add('thinking-step-details');
+                        // 預設展開第一個步驟
+                        if (idx === 0) stepDetails.setAttribute('open', '');
+
+                        const stepSummary = document.createElement('summary');
+                        stepSummary.classList.add('thinking-step-summary');
+                        stepSummary.innerHTML = `
+                            <span class="step-index">${idx + 1}</span>
+                            <span class="step-title">${step.title || '思考中...'}</span>
+                            <i class="fas fa-chevron-down step-chevron"></i>
+                        `;
+                        stepDetails.appendChild(stepSummary);
+
+                        if (Array.isArray(step.details) && step.details.length > 0) {
+                            const detailsList = document.createElement('ul');
+                            detailsList.classList.add('thinking-step-items');
+                            step.details.forEach(item => {
+                                const li = document.createElement('li');
+                                li.textContent = item;
+                                detailsList.appendChild(li);
+                            });
+                            stepDetails.appendChild(detailsList);
+                        }
+
+                        stepEl.appendChild(stepDetails);
+                        stepsContainer.appendChild(stepEl);
+                    });
                 } else {
-                    thinkingContent.innerHTML = '<em>此次情式沒有側录中間思考過程</em>';
+                    stepsContainer.innerHTML = '<p class="thinking-empty">未產生思考記錄</p>';
                 }
-                details.appendChild(thinkingContent);
+
+                details.appendChild(stepsContainer);
                 textContent.appendChild(details);
             }
 
