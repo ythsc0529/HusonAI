@@ -72,19 +72,12 @@ exports.handler = async (event) => {
 
         const model = genAI.getGenerativeModel(modelConfig);
 
-        const startTime = Date.now();
         // 傳入已淨化的 history
         const result = await model.generateContent({ contents: sanitizedHistory });
-        const durationSec = ((Date.now() - startTime) / 1000).toFixed(1);
         const response = result.response;
         let text = response.text();
 
-        // 提取思考過程，並從主文字中移除
-        let thoughtProcess = null;
-        const thoughtMatch = text.match(/<thought>([\s\S]*?)<\/thought>/i);
-        if (thoughtMatch) {
-            thoughtProcess = thoughtMatch[1].trim();
-        }
+        // 移除可能產生的思考過程
         text = text.replace(/<thought>[\s\S]*?<\/thought>\s*/gi, '').trim();
 
         // 特別處理特定模型偶發性的疊字/重複輸出 bug (如 "答案"答案)
@@ -99,10 +92,10 @@ exports.handler = async (event) => {
             }
         }
 
-        console.log(`[SUCCESS] AI response generated successfully in ${durationSec}s.`);
+        console.log(`[SUCCESS] AI response generated successfully.`);
         return {
             statusCode: 200,
-            body: JSON.stringify({ response: text, thought: thoughtProcess, thinkTimeSec: durationSec }),
+            body: JSON.stringify({ response: text }),
         };
     } catch (error) {
         // 記錄下最詳細的錯誤物件
