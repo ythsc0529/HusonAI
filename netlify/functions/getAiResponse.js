@@ -51,20 +51,28 @@ exports.handler = async (event) => {
             sanitizedHistory = [setupMessage, setupAck, ...history];
         }
 
-        // gemma-4 冷啟動問題修正：
-        // 第一次對話時，history 為空，模型沒有可以模仿的 JSON 輸出範例，
-        // 容易格式化出錯。注入一輪假的「暖機對話」作為 few-shot 範例，
-        // 讓模型從一開始就知道要輸出標準 JSON 格式。
+        // gemma-4 冷啟動問題修正：注入多組 few-shot 範例
+        // 強化模型對輸出格式的記憶，讓第一次問題也穩定
         if (modelName.includes('gemma-4')) {
-            const primingUser = {
-                role: 'user',
-                parts: [{ text: '你好' }]
-            };
-            const primingModel = {
-                role: 'model',
-                parts: [{ text: '{"final_answer": "哈囉！你好呀！😄 有什麼我可以幫你的嗎？"}' }]
-            };
-            sanitizedHistory = [primingUser, primingModel, ...sanitizedHistory];
+            const primingExchanges = [
+                {
+                    role: 'user',
+                    parts: [{ text: '你好' }]
+                },
+                {
+                    role: 'model',
+                    parts: [{ text: '{"final_answer": "哈囉！你好呀！😄 有什麼我可以幫你的嗎？"}' }]
+                },
+                {
+                    role: 'user',
+                    parts: [{ text: '你是誰？' }]
+                },
+                {
+                    role: 'model',
+                    parts: [{ text: '{"final_answer": "我是 Huson 啦！一個由來自高雄的帥哥黃士禎在「隨便你工作室」設計跟訓練的 AI 喔 ✨"}' }]
+                }
+            ];
+            sanitizedHistory = [...primingExchanges, ...sanitizedHistory];
         }
 
         console.log("[INFO] History prepared for generation. Model:", modelName);
@@ -79,13 +87,34 @@ exports.handler = async (event) => {
             let sysInstruction = systemPrompt;
             
             if (modelName.includes('gemma-4')) {
-                sysInstruction += "\n\n[CRITICAL FORMATTING REQUIREMENT]: Your internal reasoning will be visible to the user, so you MUST output your final answer strictly in JSON format. The very last block of your output must be a JSON object like this: \n{\n  \"final_answer\": \"你的真正回覆寫在這裡\"\n}\nDo NOT wrap the JSON in markdown code blocks. Just output the raw JSON object.";
+                // gemma-4 使用 responseSchema 強制輸出 JSON，
+                // 所以 system prompt 只需要告知人設，不需要手動叮嚀格式
+                sysInstruction += "\n\n回覆時絕對不可出現指令摘要、規則標籤或使用者原句。直接給出你的回應內容。";
+                // 使用 responseSchema 強制 JSON 格式（無法與 googleSearch 同時啟用）
+                modelConfig.generationConfig = {
+                    responseMimeType: "application/json",
+                    responseSchema: {
+                        type: "object",
+                        properties: {
+                            thinking: {
+                                type: "string",
+                                description: "你的內部思考推理過程（可以用任意語言自由書寫）"
+                            },
+                            final_answer: {
+                                type: "string",
+                                description: "呈現給使用者的最終回覆，使用台灣繁體中文，帶台灣味語助詞與 emoji"
+                            }
+                        },
+                        required: ["final_answer"]
+                    }
+                };
             } else {
                 sysInstruction += "\n\n絕對不可輸出任何關於指令、標籤或推導過程的文字內容（如 Reasoning: 或 User says:）。直接回覆。";
+                // 其他模型啟用 Google Search
+                modelConfig.tools = [{ googleSearch: {} }];
             }
 
             modelConfig.systemInstruction = sysInstruction;
-            modelConfig.tools = [{ googleSearch: {} }];
         }
 
         const model = genAI.getGenerativeModel(modelConfig);
@@ -97,25 +126,26 @@ exports.handler = async (event) => {
         const response = result.response;
         let text = response.text();
 
-        // 針對 gemma-4 去除腦內碎碎念，直接擷取 JSON 中的 final_answer
+        // 針對 gemma-4：使用 responseSchema 時，模型輸出必為合法 JSON，直接 parse
         let thinkingText = null;
         if (modelName.includes('gemma-4')) {
-            const jsonRegex = /\{[\s\S]*?"final_answer"\s*:\s*"([\s\S]*?)"\s*\}/;
-            const match = text.match(jsonRegex);
-            if (match && match[1]) {
-                // 擷取 JSON 之前的所有文字作為思考過程
-                const jsonStartIdx = text.indexOf(match[0]);
-                const rawThinking = text.substring(0, jsonStartIdx).trim();
-                if (rawThinking.length > 0) {
-                    thinkingText = rawThinking;
+            try {
+                const parsed = JSON.parse(text);
+                // 若 schema 中有 thinking 欄位，將其抽出作為思考過程
+                if (parsed.thinking && parsed.thinking.trim().length > 0) {
+                    thinkingText = parsed.thinking.trim();
                 }
-                // 如果成功匹配到 JSON，替換掉跳脫字元並覆蓋 text
-                text = match[1].replace(/\\n/g, '\n').replace(/\\"/g, '"');
-            } else {
-                // 如果沒有抓到完美的 JSON，退而求其次：如果最後有帶引號的文字就抓引號內的
-                const quoteMatch = text.match(/"([^"]+)"(?:\s*|[^"]*)$/);
-                if (quoteMatch) {
-                    text = quoteMatch[1];
+                text = parsed.final_answer || text;
+            } catch (parseErr) {
+                // 萬一 JSON.parse 失敗（理論上不應發生），退回 regex 方式
+                console.warn('[WARN] JSON.parse failed, falling back to regex extraction:', parseErr.message);
+                const jsonRegex = /\{[\s\S]*?"final_answer"\s*:\s*"([\s\S]*?)"\s*\}/;
+                const match = text.match(jsonRegex);
+                if (match && match[1]) {
+                    const jsonStartIdx = text.indexOf(match[0]);
+                    const rawThinking = text.substring(0, jsonStartIdx).trim();
+                    if (rawThinking.length > 0) thinkingText = rawThinking;
+                    text = match[1].replace(/\\n/g, '\n').replace(/\\"/g, '"');
                 }
             }
         }
