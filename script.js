@@ -516,7 +516,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const summary = document.createElement('summary');
                 summary.classList.add('thinking-summary');
                 const sec = thinkingData.seconds != null ? thinkingData.seconds : '?';
-                summary.innerHTML = `<i class="fas fa-brain"></i><span>已思考 ${sec} 秒</span><i class="fas fa-chevron-down thinking-chevron"></i>`;
+                summary.innerHTML = `<span>已思考 ${sec} 秒</span><i class="fas fa-chevron-down thinking-chevron"></i>`;
                 details.appendChild(summary);
 
                 const thinkingContent = document.createElement('div');
@@ -665,7 +665,6 @@ document.addEventListener('DOMContentLoaded', () => {
             // Pro 模型指示器：悦動腦路圖示 + 檢計計時器
             const thinkingWrap = document.createElement('div');
             thinkingWrap.classList.add('thinking-indicator');
-            thinkingWrap.innerHTML = '<i class="fas fa-brain"></i>';
 
             const thinkingText = document.createElement('span');
             thinkingText.classList.add('thinking-indicator-text');

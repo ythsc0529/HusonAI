@@ -486,16 +486,6 @@ textarea {
     font-size: 0.9rem;
 }
 
-.thinking-indicator i.fa-brain {
-    font-size: 1rem;
-    color: var(--accent-color);
-    animation: brainPulse 2s infinite ease-in-out;
-}
-
-@keyframes brainPulse {
-    0%, 100% { opacity: 0.5; transform: scale(1); }
-    50% { opacity: 1; transform: scale(1.15); }
-}
 
 .thinking-indicator-text {
     color: var(--text-muted);
@@ -537,10 +527,6 @@ textarea {
     background: rgba(197, 165, 114, 0.08);
 }
 
-.thinking-summary i.fa-brain {
-    color: var(--accent-color);
-    font-size: 0.9rem;
-}
 
 .thinking-summary span {
     flex: 1;
