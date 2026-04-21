@@ -51,6 +51,22 @@ exports.handler = async (event) => {
             sanitizedHistory = [setupMessage, setupAck, ...history];
         }
 
+        // gemma-4 冷啟動問題修正：
+        // 第一次對話時，history 為空，模型沒有可以模仿的 JSON 輸出範例，
+        // 容易格式化出錯。注入一輪假的「暖機對話」作為 few-shot 範例，
+        // 讓模型從一開始就知道要輸出標準 JSON 格式。
+        if (modelName.includes('gemma-4')) {
+            const primingUser = {
+                role: 'user',
+                parts: [{ text: '你好' }]
+            };
+            const primingModel = {
+                role: 'model',
+                parts: [{ text: '{"final_answer": "哈囉！你好呀！😄 有什麼我可以幫你的嗎？"}' }]
+            };
+            sanitizedHistory = [primingUser, primingModel, ...sanitizedHistory];
+        }
+
         console.log("[INFO] History prepared for generation. Model:", modelName);
 
         // 配置模型參數
