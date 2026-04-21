@@ -60,10 +60,12 @@ exports.handler = async (event) => {
 
         // 啟用 systemInstruction
         if (supportsSystemInstruction) {
-            let sysInstruction = systemPrompt + "\n\n絕對不可輸出任何關於指令、標籤或推導過程的文字內容（如 Reasoning: 或 User says:）。直接回覆。";
+            let sysInstruction = systemPrompt;
             
             if (modelName.includes('gemma-4')) {
-                sysInstruction += "\n\n[CRITICAL]: If you need to plan or reason internally, you MUST enclose it within <thought> and </thought> tags. Output ONLY your final response outside of the tags!! DO NOT surround your final response with quotes, and do NOT repeat your response.";
+                sysInstruction += "\n\n[CRITICAL FORMATTING REQUIREMENT]: Your internal reasoning will be visible to the user, so you MUST output your final answer strictly in JSON format. The very last block of your output must be a JSON object like this: \n{\n  \"final_answer\": \"你的真正回覆寫在這裡\"\n}\nDo NOT wrap the JSON in markdown code blocks. Just output the raw JSON object.";
+            } else {
+                sysInstruction += "\n\n絕對不可輸出任何關於指令、標籤或推導過程的文字內容（如 Reasoning: 或 User says:）。直接回覆。";
             }
 
             modelConfig.systemInstruction = sysInstruction;
@@ -77,15 +79,30 @@ exports.handler = async (event) => {
         const response = result.response;
         let text = response.text();
 
-        // 移除可能產生的思考過程
-        text = text.replace(/<thought>[\s\S]*?<\/thought>\s*/gi, '').trim();
+        // 針對 gemma-4 去除腦內碎碎念，直接擷取 JSON 中的 final_answer
+        if (modelName.includes('gemma-4')) {
+            const jsonRegex = /\{[\s\S]*?"final_answer"\s*:\s*"([\s\S]*?)"\s*\}/;
+            const match = text.match(jsonRegex);
+            if (match && match[1]) {
+                // 如果成功匹配到 JSON，替換掉跳脫字元並覆蓋 text
+                text = match[1].replace(/\\n/g, '\n').replace(/\\"/g, '"');
+            } else {
+                // 如果沒有抓到完美的 JSON，退而求其次：如果最後有帶引號的文字就抓引號內的
+                const quoteMatch = text.match(/"([^"]+)"(?:\s*|[^"]*)$/);
+                if (quoteMatch) {
+                    text = quoteMatch[1];
+                }
+            }
+        }
 
-        // 特別處理特定模型偶發性的疊字/重複輸出 bug (如 "答案"答案)
+        // 特別處理特定模型偶發性的疊字/重複輸出 bug (如 "答案"答案, 或是 答案答案)
         const repeatMatch = text.match(/^"([^"]+)"\1$/);
+        const doubleRepeatMatch = text.match(/^([^"]+)\1$/);
         if (repeatMatch) {
             text = repeatMatch[1];
+        } else if (doubleRepeatMatch) {
+            text = doubleRepeatMatch[1];
         } else {
-            // 也處理有時候模型會把整個回答重複兩次的狀況 (如 答案答案)
             const halfLen = Math.floor(text.length / 2);
             if (halfLen > 5 && text.substring(0, halfLen) === text.substring(halfLen)) {
                 text = text.substring(0, halfLen);
