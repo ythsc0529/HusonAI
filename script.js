@@ -109,7 +109,17 @@ document.addEventListener('DOMContentLoaded', () => {
         const isSearching = currentChatId !== 'oh3' && searchKeywords.some(keyword => messageText.toLowerCase().includes(keyword));
 
         // 如果有圖片，顯示更詳細的處理提示
-        const processingType = imageData ? 'processing-image' : (isSearching ? 'searching' : 'typing');
+        // Pro 模型（huson2.5）使用“思考中”動畫，其他模型使用搬索動畫
+        let processingType;
+        if (currentChatId === 'huson2.5') {
+            processingType = 'thinking';
+        } else if (imageData) {
+            processingType = 'processing-image';
+        } else if (isSearching) {
+            processingType = 'searching';
+        } else {
+            processingType = 'typing';
+        }
         appendTypingIndicator(processingType);
 
         // 準備要傳送的資料
@@ -179,7 +189,11 @@ document.addEventListener('DOMContentLoaded', () => {
             conversationHistory.push({ role: 'model', parts: [{ text: aiResponse }] });
             saveHistory();
             removeTypingIndicator();
-            appendMessage('ai', aiResponse);
+            // 若是 Pro 模型，傳入思考數據
+            const thinkingData = (currentChatId === 'huson2.5' && (data.thinking || data.thinkingSeconds))
+                ? { thinking: data.thinking, seconds: data.thinkingSeconds }
+                : null;
+            appendMessage('ai', aiResponse, true, null, thinkingData);
 
         } catch (error) {
             console.error("呼叫 AI 時出錯:", error);
@@ -464,7 +478,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
     };
 
-    const appendMessage = (sender, text, animate = true, image = null) => {
+    const appendMessage = (sender, text, animate = true, image = null, thinkingData = null) => {
         const messageWrapper = document.createElement('div');
         messageWrapper.classList.add('message', `${sender}-message`);
         if (!animate) {
@@ -494,8 +508,33 @@ document.addEventListener('DOMContentLoaded', () => {
                 textContent.appendChild(p);
             }
         } else {
+            // 如果有思考數據，在正文之前插入可折疊的思考區塊
+            if (thinkingData) {
+                const details = document.createElement('details');
+                details.classList.add('thinking-block');
+
+                const summary = document.createElement('summary');
+                summary.classList.add('thinking-summary');
+                const sec = thinkingData.seconds != null ? thinkingData.seconds : '?';
+                summary.innerHTML = `<i class="fas fa-brain"></i><span>已思考 ${sec} 秒</span><i class="fas fa-chevron-down thinking-chevron"></i>`;
+                details.appendChild(summary);
+
+                const thinkingContent = document.createElement('div');
+                thinkingContent.classList.add('thinking-content');
+                if (thinkingData.thinking) {
+                    // 用 marked 解析思考內容
+                    thinkingContent.innerHTML = marked.parse(thinkingData.thinking);
+                } else {
+                    thinkingContent.innerHTML = '<em>此次情式沒有側录中間思考過程</em>';
+                }
+                details.appendChild(thinkingContent);
+                textContent.appendChild(details);
+            }
+
             // AI 訊息：先用 marked 解析，然後渲染數學公式
-            textContent.innerHTML = marked.parse(text);
+            const aiTextDiv = document.createElement('div');
+            aiTextDiv.innerHTML = marked.parse(text);
+            textContent.appendChild(aiTextDiv);
 
             // 使用 KaTeX 渲染數學公式
             if (window.renderMathInElement) {
@@ -622,6 +661,31 @@ document.addEventListener('DOMContentLoaded', () => {
 
             textContent.appendChild(retryingIndicator);
             textContent.appendChild(text);
+        } else if (type === 'thinking') {
+            // Pro 模型指示器：悦動腦路圖示 + 檢計計時器
+            const thinkingWrap = document.createElement('div');
+            thinkingWrap.classList.add('thinking-indicator');
+            thinkingWrap.innerHTML = '<i class="fas fa-brain"></i>';
+
+            const thinkingText = document.createElement('span');
+            thinkingText.classList.add('thinking-indicator-text');
+            thinkingText.textContent = '思考中...';
+
+            // 計時器：顯示尚未完成的思考時間
+            const timerEl = document.createElement('span');
+            timerEl.classList.add('thinking-timer');
+            timerEl.textContent = '0s';
+            let elapsed = 0;
+            const timerInterval = setInterval(() => {
+                elapsed++;
+                timerEl.textContent = `${elapsed}s`;
+            }, 1000);
+            // 將 interval ID 儲存到 messageWrapper，方便移除時清理
+            messageWrapper.dataset.timerInterval = timerInterval;
+
+            thinkingWrap.appendChild(thinkingText);
+            thinkingWrap.appendChild(timerEl);
+            textContent.appendChild(thinkingWrap);
         } else {
             const typingIndicator = document.createElement('div');
             typingIndicator.classList.add('typing-indicator');
@@ -637,7 +701,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const removeTypingIndicator = () => {
         const indicator = document.querySelector('.typing-indicator-wrapper');
-        if (indicator) indicator.remove();
+        if (indicator) {
+            // 若是思考中指示器，清除計時器
+            if (indicator.dataset.timerInterval) {
+                clearInterval(parseInt(indicator.dataset.timerInterval));
+            }
+            indicator.remove();
+        }
     };
 
     selectionCards.forEach(card => {

@@ -75,15 +75,24 @@ exports.handler = async (event) => {
         const model = genAI.getGenerativeModel(modelConfig);
 
         // 傳入已淨化的 history
+        const thinkingStartTime = Date.now();
         const result = await model.generateContent({ contents: sanitizedHistory });
+        const thinkingSeconds = ((Date.now() - thinkingStartTime) / 1000).toFixed(1);
         const response = result.response;
         let text = response.text();
 
         // 針對 gemma-4 去除腦內碎碎念，直接擷取 JSON 中的 final_answer
+        let thinkingText = null;
         if (modelName.includes('gemma-4')) {
             const jsonRegex = /\{[\s\S]*?"final_answer"\s*:\s*"([\s\S]*?)"\s*\}/;
             const match = text.match(jsonRegex);
             if (match && match[1]) {
+                // 擷取 JSON 之前的所有文字作為思考過程
+                const jsonStartIdx = text.indexOf(match[0]);
+                const rawThinking = text.substring(0, jsonStartIdx).trim();
+                if (rawThinking.length > 0) {
+                    thinkingText = rawThinking;
+                }
                 // 如果成功匹配到 JSON，替換掉跳脫字元並覆蓋 text
                 text = match[1].replace(/\\n/g, '\n').replace(/\\"/g, '"');
             } else {
@@ -109,10 +118,14 @@ exports.handler = async (event) => {
             }
         }
 
-        console.log(`[SUCCESS] AI response generated successfully.`);
+        console.log(`[SUCCESS] AI response generated successfully. Thinking: ${thinkingSeconds}s`);
         return {
             statusCode: 200,
-            body: JSON.stringify({ response: text }),
+            body: JSON.stringify({
+                response: text,
+                thinking: thinkingText,
+                thinkingSeconds: parseFloat(thinkingSeconds)
+            }),
         };
     } catch (error) {
         // 記錄下最詳細的錯誤物件
