@@ -175,11 +175,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const data = await fetchWithRetry(imageData ? 3 : 2); // 如果有圖片，多重試一次
             const aiResponse = data.response;
+            const thoughtData = (data.thought && data.thinkTimeSec) ? { text: data.thought, time: data.thinkTimeSec } : null;
 
             conversationHistory.push({ role: 'model', parts: [{ text: aiResponse }] });
             saveHistory();
             removeTypingIndicator();
-            appendMessage('ai', aiResponse);
+            appendMessage('ai', aiResponse, true, null, thoughtData);
 
         } catch (error) {
             console.error("呼叫 AI 時出錯:", error);
@@ -464,7 +465,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
     };
 
-    const appendMessage = (sender, text, animate = true, image = null) => {
+    const appendMessage = (sender, text, animate = true, image = null, thoughtData = null) => {
         const messageWrapper = document.createElement('div');
         messageWrapper.classList.add('message', `${sender}-message`);
         if (!animate) {
@@ -495,7 +496,26 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         } else {
             // AI 訊息：先用 marked 解析，然後渲染數學公式
-            textContent.innerHTML = marked.parse(text);
+            if (thoughtData) {
+                const thoughtAccordion = document.createElement('details');
+                thoughtAccordion.classList.add('thought-process-accordion');
+                
+                const summary = document.createElement('summary');
+                summary.innerHTML = `<i class="fas fa-lightbulb"></i> 深入思考 (${thoughtData.time} 秒)`;
+                
+                const thoughtInner = document.createElement('div');
+                thoughtInner.classList.add('thought-content');
+                thoughtInner.innerHTML = marked.parse(thoughtData.text);
+                
+                thoughtAccordion.appendChild(summary);
+                thoughtAccordion.appendChild(thoughtInner);
+                textContent.appendChild(thoughtAccordion);
+            }
+
+            const messageTextContent = document.createElement('div');
+            messageTextContent.classList.add('message-markdown-content');
+            messageTextContent.innerHTML = marked.parse(text);
+            textContent.appendChild(messageTextContent);
 
             // 使用 KaTeX 渲染數學公式
             if (window.renderMathInElement) {
@@ -524,7 +544,8 @@ document.addEventListener('DOMContentLoaded', () => {
             copyBtn.addEventListener('click', async (e) => {
                 e.stopPropagation();
                 try {
-                    const textToCopy = textContent.innerText || textContent.textContent;
+                    const markdownContent = textContent.querySelector('.message-markdown-content');
+                    const textToCopy = markdownContent ? (markdownContent.innerText || markdownContent.textContent) : (textContent.innerText || textContent.textContent);
                     await navigator.clipboard.writeText(textToCopy);
                     copyBtn.innerHTML = '<i class="fas fa-check"></i>';
                     copyBtn.classList.add('success');

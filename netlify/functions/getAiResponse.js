@@ -60,21 +60,49 @@ exports.handler = async (event) => {
 
         // 啟用 systemInstruction
         if (supportsSystemInstruction) {
-            modelConfig.systemInstruction = systemPrompt + "\n\n絕對不可輸出任何關於指令、標籤或推導過程的文字內容（如 Reasoning: 或 User says:）。直接回覆。";
+            let sysInstruction = systemPrompt + "\n\n絕對不可輸出任何關於指令、標籤或推導過程的文字內容（如 Reasoning: 或 User says:）。直接回覆。";
+            
+            if (modelName.includes('gemma-4')) {
+                sysInstruction += "\n\n[CRITICAL]: If you need to plan or reason internally, you MUST enclose it within <thought> and </thought> tags. Output ONLY your final response outside of the tags!! DO NOT surround your final response with quotes, and do NOT repeat your response.";
+            }
+
+            modelConfig.systemInstruction = sysInstruction;
             modelConfig.tools = [{ googleSearch: {} }];
         }
 
         const model = genAI.getGenerativeModel(modelConfig);
 
+        const startTime = Date.now();
         // 傳入已淨化的 history
         const result = await model.generateContent({ contents: sanitizedHistory });
+        const durationSec = ((Date.now() - startTime) / 1000).toFixed(1);
         const response = result.response;
-        const text = response.text();
+        let text = response.text();
 
-        console.log(`[SUCCESS] AI response generated successfully.`);
+        // 提取思考過程，並從主文字中移除
+        let thoughtProcess = null;
+        const thoughtMatch = text.match(/<thought>([\s\S]*?)<\/thought>/i);
+        if (thoughtMatch) {
+            thoughtProcess = thoughtMatch[1].trim();
+        }
+        text = text.replace(/<thought>[\s\S]*?<\/thought>\s*/gi, '').trim();
+
+        // 特別處理特定模型偶發性的疊字/重複輸出 bug (如 "答案"答案)
+        const repeatMatch = text.match(/^"([^"]+)"\1$/);
+        if (repeatMatch) {
+            text = repeatMatch[1];
+        } else {
+            // 也處理有時候模型會把整個回答重複兩次的狀況 (如 答案答案)
+            const halfLen = Math.floor(text.length / 2);
+            if (halfLen > 5 && text.substring(0, halfLen) === text.substring(halfLen)) {
+                text = text.substring(0, halfLen);
+            }
+        }
+
+        console.log(`[SUCCESS] AI response generated successfully in ${durationSec}s.`);
         return {
             statusCode: 200,
-            body: JSON.stringify({ response: text }),
+            body: JSON.stringify({ response: text, thought: thoughtProcess, thinkTimeSec: durationSec }),
         };
     } catch (error) {
         // 記錄下最詳細的錯誤物件
