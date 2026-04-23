@@ -186,15 +186,15 @@ class LiveAPIClient {
             this.ws.onopen = () => {
                 this.isConnected = true;
                 
-                // Send setup message
+                // Send setup message (Must use camelCase for WebSocket protocol)
                 const setupMessage = {
                     setup: {
                         model: "models/gemini-2.0-flash-exp",
-                        system_instruction: {
+                        systemInstruction: {
                             parts: [{ text: systemInstruction }]
                         },
-                        generation_config: {
-                            response_modalities: ["audio"]
+                        generationConfig: {
+                            responseModalities: ["AUDIO"]
                         }
                     }
                 };
@@ -209,8 +209,9 @@ class LiveAPIClient {
                 if (this.onMessage) this.onMessage(data);
             };
             
-            this.ws.onclose = () => {
+            this.ws.onclose = (event) => {
                 this.isConnected = false;
+                console.warn('[LiveAPIClient] Connection closed:', event.code, event.reason);
                 if (this.onClose) this.onClose();
             };
             
@@ -225,10 +226,10 @@ class LiveAPIClient {
         if (!this.isConnected) return;
         
         const message = {
-            realtime_input: {
-                media_chunks: [
+            realtimeInput: {
+                mediaChunks: [
                     {
-                        mime_type: "audio/pcm;rate=16000",
+                        mimeType: "audio/pcm;rate=16000",
                         data: base64Audio
                     }
                 ]
