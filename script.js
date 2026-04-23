@@ -635,6 +635,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             await lh1Client.connect(apiKey, systemInstruction);
             lh1UI.updateStatus('Huson 正在聆聽...', 'listening');
+            lh1UI.startTimer();
 
         } catch (error) {
             console.error('LH1 Live Mode 初始化失敗:', error);

@@ -354,15 +354,19 @@ class LiveAPIClient {
 }
 
 // UI Manager for LH1 Live Mode
+// UI Manager for LH1 Live Mode
 class LH1UIManager {
     constructor() {
         this.overlay = null;
         this.sphere = null;
         this.statusText = null;
+        this.timerText = null;
         this.muteBtn = null;
         this.isMuted = false;
         this.onEndCall = null;
         this.onToggleMute = null;
+        this.startTime = null;
+        this.timerInterval = null;
     }
 
     createOverlay() {
@@ -373,6 +377,9 @@ class LH1UIManager {
         overlay.innerHTML = `
             <div class="live-bg">
                 <div class="live-bg-blob"></div>
+            </div>
+            <div class="live-header">
+                <div class="live-timer" id="live-call-timer">00:00</div>
             </div>
             <div class="lh1-sphere-container">
                 <div class="live-status-text" id="live-status">正在喚醒 LH1...</div>
@@ -398,6 +405,7 @@ class LH1UIManager {
         this.overlay = overlay;
         this.sphere = overlay.querySelector('#lh1-core');
         this.statusText = overlay.querySelector('#live-status');
+        this.timerText = overlay.querySelector('#live-call-timer');
         this.muteBtn = overlay.querySelector('#live-mute-btn');
         
         overlay.querySelector('#live-end-btn').addEventListener('click', () => {
@@ -418,11 +426,36 @@ class LH1UIManager {
 
     hide() {
         this.overlay.classList.remove('active');
+        this.stopTimer();
     }
 
     updateStatus(text, state = 'idle') {
         this.statusText.textContent = text;
         this.sphere.className = 'lh1-sphere ' + state;
+    }
+
+    startTimer() {
+        this.stopTimer();
+        this.startTime = Date.now();
+        this.timerText.textContent = '00:00';
+        this.timerText.classList.add('active');
+        
+        this.timerInterval = setInterval(() => {
+            const elapsed = Math.floor((Date.now() - this.startTime) / 1000);
+            const minutes = Math.floor(elapsed / 60).toString().padStart(2, '0');
+            const seconds = (elapsed % 60).toString().padStart(2, '0');
+            this.timerText.textContent = `${minutes}:${seconds}`;
+        }, 1000);
+    }
+
+    stopTimer() {
+        if (this.timerInterval) {
+            clearInterval(this.timerInterval);
+            this.timerInterval = null;
+        }
+        if (this.timerText) {
+            this.timerText.classList.remove('active');
+        }
     }
 }
 
