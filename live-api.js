@@ -189,7 +189,7 @@ class LiveAPIClient {
                 // Send setup message (Must use camelCase for WebSocket protocol)
                 const setupMessage = {
                     setup: {
-                        model: "models/gemini-2.0-flash-exp",
+                        model: "models/gemini-3.1-flash-live-preview",
                         systemInstruction: {
                             parts: [{ text: systemInstruction }]
                         },
