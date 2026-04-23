@@ -1,24 +1,26 @@
 /**
- * AudioProcessor - 處理音訊擷取與播放
+ * Live API Client and Audio Processor for Gemini Multimodal Live
+ * Designed for LH1 Model
  */
+
 class AudioProcessor {
     constructor() {
         this.audioContext = null;
         this.stream = null;
-        this.source = null;
-        this.processor = null;
+        this.mediaRecorder = null;
+        this.inputSampleRate = 16000;
         this.isRecording = false;
         this.onAudioData = null;
-        this.sampleRate = 16000; // Gemini Live API 期望的輸入採樣率
-        this.outputSampleRate = 24000; // Gemini Live API 提供的輸出採樣率
+        this.audioQueue = [];
+        this.isPlaying = false;
+        this.nextStartTime = 0;
     }
 
     async initialize() {
         this.audioContext = new (window.AudioContext || window.webkitAudioContext)({
-            sampleRate: this.sampleRate
+            sampleRate: this.inputSampleRate
         });
         
-        // 為了播放音訊，我們需要一個專門的播放 Context (或共用)
         if (this.audioContext.state === 'suspended') {
             await this.audioContext.resume();
         }
@@ -29,33 +31,28 @@ class AudioProcessor {
         
         this.onAudioData = callback;
         this.stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        const source = this.audioContext.createMediaStreamSource(this.stream);
         
-        if (this.audioContext.state === 'suspended') {
-            await this.audioContext.resume();
-        }
-
-        // 載入 AudioWorklet 模組
-        await this.audioContext.audioWorklet.addModule('audio-processor-worklet.js');
+        // Use a ScriptProcessorNode for simple PCM extraction (Legacy but widely compatible for 16kHz)
+        const processor = this.audioContext.createScriptProcessor(4096, 1, 1);
         
-        this.source = this.audioContext.createMediaStreamSource(this.stream);
-        this.processor = new AudioWorkletNode(this.audioContext, 'audio-processor-worklet');
+        source.connect(processor);
+        processor.connect(this.audioContext.destination);
         
-        this.processor.port.onmessage = (event) => {
+        processor.onaudioprocess = (e) => {
             if (!this.isRecording) return;
+            const inputData = e.inputBuffer.getChannelData(0);
             
-            const inputData = event.data;
-            // 將 Float32 轉換為 Int16 (PCM)
+            // Convert Float32 to Int16 PCM
             const pcmData = this.floatTo16BitPCM(inputData);
-            // 轉換為 Base64
-            const base64Audio = this.arrayBufferToBase64(pcmData.buffer);
+            const base64Audio = this.base64Encode(pcmData);
             
             if (this.onAudioData) {
                 this.onAudioData(base64Audio);
             }
         };
-
-        this.source.connect(this.processor);
-        this.processor.connect(this.audioContext.destination);
+        
+        this.processor = processor;
         this.isRecording = true;
     }
 
@@ -67,144 +64,132 @@ class AudioProcessor {
         if (this.processor) {
             this.processor.disconnect();
         }
-        if (this.source) {
-            this.source.disconnect();
-        }
     }
 
-    // 播放從 API 傳回的 Base64 PCM 音訊
-    async playPCMAudio(base64Data) {
-        const arrayBuffer = this.base64ToArrayBuffer(base64Data);
-        const pcmData = new Int16Array(arrayBuffer);
-        const floatData = new Float32Array(pcmData.length);
-        
-        // Int16 to Float32
-        for (let i = 0; i < pcmData.length; i++) {
-            floatData[i] = pcmData[i] / 32768.0;
-        }
-
-        const audioBuffer = this.audioContext.createBuffer(1, floatData.length, this.outputSampleRate);
-        audioBuffer.getChannelData(0).set(floatData);
-
-        const source = this.audioContext.createBufferSource();
-        source.buffer = audioBuffer;
-        source.connect(this.audioContext.destination);
-        source.start();
-    }
-
-    // 輔助工具
     floatTo16BitPCM(float32Array) {
         const buffer = new ArrayBuffer(float32Array.length * 2);
         const view = new DataView(buffer);
         for (let i = 0; i < float32Array.length; i++) {
-            let s = Math.max(-1, Math.min(1, float32Array[i]));
+            const s = Math.max(-1, Math.min(1, float32Array[i]));
             view.setInt16(i * 2, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
         }
-        return new Int16Array(buffer);
+        return buffer;
     }
 
-    arrayBufferToBase64(buffer) {
-        let binary = '';
+    base64Encode(buffer) {
         const bytes = new Uint8Array(buffer);
-        const len = bytes.byteLength;
-        for (let i = 0; i < len; i++) {
+        let binary = '';
+        for (let i = 0; i < bytes.byteLength; i++) {
             binary += String.fromCharCode(bytes[i]);
         }
-        return window.btoa(binary);
+        return btoa(binary);
     }
 
-    base64ToArrayBuffer(base64) {
-        const binaryString = window.atob(base64);
-        const len = binaryString.length;
-        const bytes = new Uint8Array(len);
-        for (let i = 0; i < len; i++) {
-            bytes[i] = binaryString.charCodeAt(i);
+    // Play PCM audio from Base64
+    async playPCMAudio(base64Data) {
+        const binary = atob(base64Data);
+        const bytes = new Uint8Array(binary.length);
+        for (let i = 0; i < binary.length; i++) {
+            bytes[i] = binary.charCodeAt(i);
         }
-        return bytes.buffer;
+        
+        const int16Data = new Int16Array(bytes.buffer);
+        const float32Data = new Float32Array(int16Data.length);
+        for (let i = 0; i < int16Data.length; i++) {
+            float32Data[i] = int16Data[i] / 32768.0;
+        }
+        
+        const audioBuffer = this.audioContext.createBuffer(1, float32Data.length, this.inputSampleRate);
+        audioBuffer.getChannelData(0).set(float32Data);
+        
+        const source = this.audioContext.createBufferSource();
+        source.buffer = audioBuffer;
+        source.connect(this.audioContext.destination);
+        
+        const currentTime = this.audioContext.currentTime;
+        if (this.nextStartTime < currentTime) {
+            this.nextStartTime = currentTime;
+        }
+        
+        source.start(this.nextStartTime);
+        this.nextStartTime += audioBuffer.duration;
+    }
+
+    stopAllPlayback() {
+        // Reset nextStartTime to allow immediate playback of new audio
+        this.nextStartTime = this.audioContext.currentTime;
     }
 }
 
-/**
- * LiveAPIClient - 管理與 Gemini Live API 的 WebSocket 連接
- */
 class LiveAPIClient {
     constructor() {
         this.ws = null;
         this.isConnected = false;
         this.onOpen = null;
         this.onMessage = null;
-        this.onError = null;
         this.onClose = null;
-        this.model = "models/gemini-2.5-flash-live"; // 修正為 Gemini 2.5 Live 的正確 API ID
+        this.onError = null;
     }
 
     async connect(apiKey, systemInstruction) {
-        // 切換回 v1alpha，這是支援 2.5 Live 雙向串流的穩定介面
-        const url = `wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1alpha.GenerativeService.BidiGenerateContent?key=${apiKey}`;
-        
-        this.ws = new WebSocket(url);
-
         return new Promise((resolve, reject) => {
+            const url = `wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1alpha.GenerativeService.BidiGenerateContent?key=${apiKey}`;
+            
+            this.ws = new WebSocket(url);
+            
             this.ws.onopen = () => {
                 this.isConnected = true;
-                // 發送設定訊息
+                
+                // Send setup message
                 const setupMessage = {
                     setup: {
-                        model: this.model,
-                        generation_config: {
-                            response_modalities: ["AUDIO"],
-                            speech_config: {
-                                voice_config: { prebuilt_voice_config: { voice_name: "Aoide" } }
-                            }
-                        },
+                        model: "models/gemini-2.0-flash-exp",
                         system_instruction: {
                             parts: [{ text: systemInstruction }]
+                        },
+                        generation_config: {
+                            response_modalities: ["audio"]
                         }
                     }
                 };
+                
                 this.ws.send(JSON.stringify(setupMessage));
                 if (this.onOpen) this.onOpen();
                 resolve();
             };
-
+            
             this.ws.onmessage = (event) => {
-                let data;
-                if (event.data instanceof Blob) {
-                    // 處理二進位數據 (如果有)
-                } else {
-                    data = JSON.parse(event.data);
-                    if (this.onMessage) this.onMessage(data);
-                }
+                const data = JSON.parse(event.data);
+                if (this.onMessage) this.onMessage(data);
             };
-
+            
+            this.ws.onclose = () => {
+                this.isConnected = false;
+                if (this.onClose) this.onClose();
+            };
+            
             this.ws.onerror = (error) => {
-                console.error("[LiveAPI] WebSocket Error:", error);
                 if (this.onError) this.onError(error);
                 reject(error);
-            };
-
-            this.ws.onclose = (event) => {
-                this.isConnected = false;
-                console.warn(`[LiveAPI] Connection closed: Code ${event.code}, Reason: ${event.reason || "No reason provided"}`);
-                if (this.onClose) this.onClose(event);
             };
         });
     }
 
-    sendAudio(base64Data) {
+    sendAudio(base64Audio) {
         if (!this.isConnected) return;
         
-        const audioMessage = {
+        const message = {
             realtime_input: {
                 media_chunks: [
                     {
-                        mime_type: "audio/pcm",
-                        data: base64Data
+                        mime_type: "audio/pcm;rate=16000",
+                        data: base64Audio
                     }
                 ]
             }
         };
-        this.ws.send(JSON.stringify(audioMessage));
+        
+        this.ws.send(JSON.stringify(message));
     }
 
     disconnect() {
@@ -214,5 +199,79 @@ class LiveAPIClient {
     }
 }
 
+// UI Manager for LH1 Live Mode
+class LH1UIManager {
+    constructor() {
+        this.overlay = null;
+        this.sphere = null;
+        this.statusText = null;
+        this.muteBtn = null;
+        this.isMuted = false;
+        this.onEndCall = null;
+        this.onToggleMute = null;
+    }
+
+    createOverlay() {
+        if (document.querySelector('.live-view-overlay')) return;
+
+        const overlay = document.createElement('div');
+        overlay.className = 'live-view-overlay';
+        overlay.innerHTML = `
+            <div class="live-bg">
+                <div class="live-bg-blob"></div>
+            </div>
+            <div class="lh1-sphere-container">
+                <div class="live-status-text" id="live-status">正在喚醒 LH1...</div>
+                <div class="lh1-sphere" id="lh1-core"></div>
+            </div>
+            <div class="live-controls">
+                <button class="live-btn" id="live-mute-btn" title="靜音">
+                    <i class="fas fa-microphone"></i>
+                </button>
+                <button class="live-btn" id="live-camera-btn" disabled title="開啟相機 (即將推出)">
+                    <i class="fas fa-video"></i>
+                </button>
+                <button class="live-btn" id="live-screen-btn" disabled title="螢幕分享 (即將推出)">
+                    <i class="fas fa-desktop"></i>
+                </button>
+                <button class="live-btn end-call" id="live-end-btn" title="結束對話">
+                    <i class="fas fa-phone-slash"></i>
+                </button>
+            </div>
+        `;
+        document.body.appendChild(overlay);
+
+        this.overlay = overlay;
+        this.sphere = overlay.querySelector('#lh1-core');
+        this.statusText = overlay.querySelector('#live-status');
+        this.muteBtn = overlay.querySelector('#live-mute-btn');
+        
+        overlay.querySelector('#live-end-btn').addEventListener('click', () => {
+            if (this.onEndCall) this.onEndCall();
+        });
+
+        this.muteBtn.addEventListener('click', () => {
+            this.isMuted = !this.isMuted;
+            this.muteBtn.classList.toggle('active', this.isMuted);
+            this.muteBtn.innerHTML = this.isMuted ? '<i class="fas fa-microphone-slash"></i>' : '<i class="fas fa-microphone"></i>';
+            if (this.onToggleMute) this.onToggleMute(this.isMuted);
+        });
+    }
+
+    show() {
+        this.overlay.classList.add('active');
+    }
+
+    hide() {
+        this.overlay.classList.remove('active');
+    }
+
+    updateStatus(text, state = 'idle') {
+        this.statusText.textContent = text;
+        this.sphere.className = 'lh1-sphere ' + state;
+    }
+}
+
 window.AudioProcessor = AudioProcessor;
 window.LiveAPIClient = LiveAPIClient;
+window.LH1UIManager = LH1UIManager;
