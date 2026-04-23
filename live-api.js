@@ -34,16 +34,16 @@ class AudioProcessor {
             await this.audioContext.resume();
         }
 
+        // 載入 AudioWorklet 模組
+        await this.audioContext.audioWorklet.addModule('audio-processor-worklet.js');
+        
         this.source = this.audioContext.createMediaStreamSource(this.stream);
+        this.processor = new AudioWorkletNode(this.audioContext, 'audio-processor-worklet');
         
-        // 使用 ScriptProcessorNode (雖然被廢棄但相容性最好且實作簡單)
-        // 緩衝區大小 4096 適合 16kHz
-        this.processor = this.audioContext.createScriptProcessor(4096, 1, 1);
-        
-        this.processor.onaudioprocess = (e) => {
+        this.processor.port.onmessage = (event) => {
             if (!this.isRecording) return;
             
-            const inputData = e.inputBuffer.getChannelData(0);
+            const inputData = event.data;
             // 將 Float32 轉換為 Int16 (PCM)
             const pcmData = this.floatTo16BitPCM(inputData);
             // 轉換為 Base64
