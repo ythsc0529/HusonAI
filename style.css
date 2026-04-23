@@ -640,3 +640,252 @@ textarea {
     font-style: italic;
     margin: 0;
 }
+/* ===== LH1 Live Assistant Page ===== */
+#lh1-page {
+    padding: 0;
+    background: radial-gradient(circle at center, #fdfbf7 0%, #f5f0e6 100%);
+    display: none;
+    height: 100vh;
+    height: 100dvh;
+    overflow: hidden;
+}
+
+#lh1-page.active {
+    display: flex;
+    flex-direction: column;
+}
+
+.lh1-container {
+    max-width: 1100px;
+    width: 100%;
+    height: 100%;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    padding: 24px;
+}
+
+.lh1-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+}
+
+.lh1-status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.9rem;
+    color: var(--text-muted);
+}
+
+.lh1-status .status-dot {
+    width: 8px;
+    height: 8px;
+    background: #ccc;
+    border-radius: 50%;
+}
+
+.lh1-status.connected .status-dot {
+    background: #10b981;
+    box-shadow: 0 0 8px #10b981;
+}
+
+.lh1-status.connecting .status-dot {
+    background: #f59e0b;
+    animation: pulseStatus 1s infinite;
+}
+
+@keyframes pulseStatus {
+    0% { opacity: 1; }
+    50% { opacity: 0.4; }
+    100% { opacity: 1; }
+}
+
+.lh1-main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+}
+
+/* ===== Pulsing Orb ===== */
+.orb-wrapper {
+    position: relative;
+    width: 280px;
+    height: 280px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 5;
+}
+
+.orb-outer {
+    position: relative;
+    width: 200px;
+    height: 200px;
+    border-radius: 50%;
+    background: var(--accent-color);
+    transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* 預設呼吸狀態 */
+.orb-outer {
+    animation: orbBreath 4s infinite ease-in-out;
+    background: linear-gradient(135deg, var(--accent-color) 0%, var(--primary-color) 100%);
+    box-shadow: 0 0 40px rgba(197, 165, 114, 0.3);
+}
+
+/* 聆聽狀態 (User Speaking) */
+.orb-outer.listening {
+    animation: orbListen 1.5s infinite ease-in-out;
+    background: linear-gradient(135deg, #C5A572 0%, #8B7E66 100%);
+    transform: scale(1.1);
+    box-shadow: 0 0 60px rgba(197, 165, 114, 0.5);
+}
+
+/* 回應狀態 (AI Speaking) */
+.orb-outer.speaking {
+    animation: orbSpeak 0.8s infinite alternate ease-in-out;
+    background: linear-gradient(135deg, #D4B483 0%, #A6937C 100%);
+    box-shadow: 0 0 80px rgba(197, 165, 114, 0.6);
+}
+
+@keyframes orbBreath {
+    0%, 100% { transform: scale(1); opacity: 0.8; }
+    50% { transform: scale(1.05); opacity: 1; }
+}
+
+@keyframes orbListen {
+    0% { transform: scale(1.1); box-shadow: 0 0 40px rgba(197, 165, 114, 0.4); }
+    50% { transform: scale(1.15); box-shadow: 0 0 70px rgba(197, 165, 114, 0.6); }
+    100% { transform: scale(1.1); box-shadow: 0 0 40px rgba(197, 165, 114, 0.4); }
+}
+
+@keyframes orbSpeak {
+    from { transform: scale(1.05); }
+    to { transform: scale(1.25); }
+}
+
+.orb-inner {
+    width: 80%;
+    height: 80%;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(5px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.orb-glow {
+    position: absolute;
+    top: -20%; left: -20%; width: 140%; height: 140%;
+    background: radial-gradient(circle, rgba(197, 165, 114, 0.2) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: -1;
+}
+
+.lh1-visual-preview {
+    width: 100%;
+    max-width: 600px;
+    aspect-ratio: 16/9;
+    background: rgba(0,0,0,0.03);
+    border-radius: var(--radius-lg);
+    margin: 20px 0;
+    display: none; /* 預設隱藏，未來功能 */
+    border: 1px dashed var(--border-color);
+    align-items: center;
+    justify-content: center;
+    color: var(--text-muted);
+}
+
+.lh1-info {
+    text-align: center;
+    margin-top: 32px;
+}
+
+.lh1-model-name {
+    font-size: 1.5rem;
+    margin-bottom: 8px;
+    color: var(--text-main);
+}
+
+.lh1-hint {
+    color: var(--text-muted);
+    font-size: 1rem;
+}
+
+.lh1-footer {
+    padding: 40px 0;
+    display: flex;
+    justify-content: center;
+}
+
+.lh1-controls {
+    display: flex;
+    align-items: center;
+    gap: 32px;
+}
+
+.control-btn {
+    border: none;
+    cursor: pointer;
+    transition: var(--transition);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.control-btn.primary {
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    background: var(--primary-color);
+    color: white;
+    font-size: 1.8rem;
+    box-shadow: 0 8px 24px rgba(139, 126, 102, 0.3);
+}
+
+.control-btn.primary:hover {
+    transform: scale(1.1);
+    box-shadow: 0 12px 32px rgba(139, 126, 102, 0.4);
+}
+
+.control-btn.primary.active {
+    background: #ef4444;
+    box-shadow: 0 8px 24px rgba(239, 68, 68, 0.3);
+}
+
+.control-btn.secondary {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: white;
+    border: 1px solid var(--border-color);
+    color: var(--text-muted);
+    font-size: 1.2rem;
+}
+
+.control-btn.secondary:hover:not(.disabled) {
+    border-color: var(--accent-color);
+    color: var(--accent-color);
+    transform: translateY(-2px);
+}
+
+.control-btn.disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+}
+
+/* ===== 響應式微調 ===== */
+@media (max-width: 768px) {
+    .orb-wrapper { width: 200px; height: 200px; }
+    .orb-outer { width: 150px; height: 150px; }
+    .lh1-model-name { font-size: 1.25rem; }
+}
