@@ -30,30 +30,67 @@ class AudioProcessor {
         if (this.isRecording) return;
         
         this.onAudioData = callback;
-        this.stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        const source = this.audioContext.createMediaStreamSource(this.stream);
         
-        // Use a ScriptProcessorNode for simple PCM extraction (Legacy but widely compatible for 16kHz)
-        const processor = this.audioContext.createScriptProcessor(4096, 1, 1);
-        
-        source.connect(processor);
-        processor.connect(this.audioContext.destination);
-        
-        processor.onaudioprocess = (e) => {
-            if (!this.isRecording) return;
-            const inputData = e.inputBuffer.getChannelData(0);
-            
-            // Convert Float32 to Int16 PCM
-            const pcmData = this.floatTo16BitPCM(inputData);
-            const base64Audio = this.base64Encode(pcmData);
-            
-            if (this.onAudioData) {
-                this.onAudioData(base64Audio);
+        // Use AudioWorklet if possible (modern way)
+        try {
+            if (!this.audioContext.audioWorklet) {
+                throw new Error('AudioWorklet not supported');
             }
-        };
-        
-        this.processor = processor;
-        this.isRecording = true;
+
+            // Create worklet code as a Blob
+            const workletCode = `
+                class AudioCaptureProcessor extends AudioWorkletProcessor {
+                    process(inputs, outputs, parameters) {
+                        const input = inputs[0];
+                        if (input.length > 0) {
+                            const inputData = input[0];
+                            this.port.postMessage(inputData);
+                        }
+                        return true;
+                    }
+                }
+                registerProcessor('audio-capture-processor', AudioCaptureProcessor);
+            `;
+            const blob = new Blob([workletCode], { type: 'application/javascript' });
+            const url = URL.createObjectURL(blob);
+            await this.audioContext.audioWorklet.addModule(url);
+            
+            this.stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            const source = this.audioContext.createMediaStreamSource(this.stream);
+            
+            this.workletNode = new AudioWorkletNode(this.audioContext, 'audio-capture-processor');
+            this.workletNode.port.onmessage = (e) => {
+                if (!this.isRecording) return;
+                const inputData = e.data;
+                const pcmData = this.floatTo16BitPCM(inputData);
+                const base64Audio = this.base64Encode(pcmData);
+                if (this.onAudioData) this.onAudioData(base64Audio);
+            };
+            
+            source.connect(this.workletNode);
+            this.isRecording = true;
+            URL.revokeObjectURL(url);
+        } catch (e) {
+            console.warn('Fallback to ScriptProcessorNode due to:', e.message);
+            // Fallback to legacy ScriptProcessorNode if AudioWorklet fails
+            this.stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            const source = this.audioContext.createMediaStreamSource(this.stream);
+            const processor = this.audioContext.createScriptProcessor(4096, 1, 1);
+            
+            source.connect(processor);
+            processor.connect(this.audioContext.destination);
+            
+            processor.onaudioprocess = (e) => {
+                if (!this.isRecording) return;
+                const inputData = e.inputBuffer.getChannelData(0);
+                const pcmData = this.floatTo16BitPCM(inputData);
+                const base64Audio = this.base64Encode(pcmData);
+                if (this.onAudioData) this.onAudioData(base64Audio);
+            };
+            
+            this.processor = processor;
+            this.isRecording = true;
+        }
     }
 
     stopCapture() {
@@ -61,8 +98,13 @@ class AudioProcessor {
         if (this.stream) {
             this.stream.getTracks().forEach(track => track.stop());
         }
+        if (this.workletNode) {
+            this.workletNode.disconnect();
+            this.workletNode = null;
+        }
         if (this.processor) {
             this.processor.disconnect();
+            this.processor = null;
         }
     }
 
