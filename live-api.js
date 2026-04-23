@@ -204,9 +204,20 @@ class LiveAPIClient {
                 resolve();
             };
             
-            this.ws.onmessage = (event) => {
-                const data = JSON.parse(event.data);
-                if (this.onMessage) this.onMessage(data);
+            this.ws.onmessage = async (event) => {
+                let textData;
+                if (event.data instanceof Blob) {
+                    textData = await event.data.text();
+                } else {
+                    textData = event.data;
+                }
+                
+                try {
+                    const data = JSON.parse(textData);
+                    if (this.onMessage) this.onMessage(data);
+                } catch (e) {
+                    console.error('[LiveAPIClient] Failed to parse message:', e, textData);
+                }
             };
             
             this.ws.onclose = (event) => {
@@ -227,12 +238,10 @@ class LiveAPIClient {
         
         const message = {
             realtimeInput: {
-                mediaChunks: [
-                    {
-                        mimeType: "audio/pcm;rate=16000",
-                        data: base64Audio
-                    }
-                ]
+                audio: {
+                    mimeType: "audio/pcm;rate=16000",
+                    data: base64Audio
+                }
             }
         };
         
