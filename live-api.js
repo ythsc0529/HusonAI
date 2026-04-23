@@ -205,6 +205,57 @@ class AudioProcessor {
         oscillator.start(now);
         oscillator.stop(now + 0.3);
     }
+
+    // Play sound for microphone toggle
+    playMicSound(isOn) {
+        if (!this.audioContext) return;
+        
+        const now = this.audioContext.currentTime;
+        const oscillator = this.audioContext.createOscillator();
+        const gainNode = this.audioContext.createGain();
+        
+        oscillator.type = 'sine';
+        if (isOn) {
+            oscillator.frequency.setValueAtTime(400, now);
+            oscillator.frequency.exponentialRampToValueAtTime(600, now + 0.1);
+        } else {
+            oscillator.frequency.setValueAtTime(600, now);
+            oscillator.frequency.exponentialRampToValueAtTime(400, now + 0.1);
+        }
+        
+        gainNode.gain.setValueAtTime(0, now);
+        gainNode.gain.linearRampToValueAtTime(0.05, now + 0.05);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+        
+        oscillator.connect(gainNode);
+        gainNode.connect(this.audioContext.destination);
+        
+        oscillator.start(now);
+        oscillator.stop(now + 0.2);
+    }
+
+    // Play sound for ending call
+    playEndCallSound() {
+        if (!this.audioContext) return;
+        
+        const now = this.audioContext.currentTime;
+        const oscillator = this.audioContext.createOscillator();
+        const gainNode = this.audioContext.createGain();
+        
+        oscillator.type = 'triangle';
+        oscillator.frequency.setValueAtTime(300, now);
+        oscillator.frequency.linearRampToValueAtTime(150, now + 0.3);
+        
+        gainNode.gain.setValueAtTime(0, now);
+        gainNode.gain.linearRampToValueAtTime(0.1, now + 0.05);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+        
+        oscillator.connect(gainNode);
+        gainNode.connect(this.audioContext.destination);
+        
+        oscillator.start(now);
+        oscillator.stop(now + 0.3);
+    }
 }
 
 class LiveAPIClient {

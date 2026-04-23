@@ -546,7 +546,9 @@ document.addEventListener('DOMContentLoaded', () => {
         lh1UI.onToggleMute = (isMuted) => {
             if (isMuted) {
                 lh1Processor.stopCapture();
+                lh1Processor.playMicSound(false);
             } else {
+                lh1Processor.playMicSound(true);
                 lh1Processor.startCapture((base64) => {
                     if (lh1Client && lh1Client.isConnected) {
                         lh1Client.sendAudio(base64);
@@ -612,7 +614,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (message.serverContent && message.serverContent.turnComplete) {
                     setTimeout(() => {
                         if (lh1Client.isConnected) {
-                            lh1UI.updateStatus('正在傾聽...', 'listening');
+                            lh1UI.updateStatus('Huson 正在聆聽...', 'listening');
                             lh1Processor.playChime();
                         }
                     }, 500);
@@ -621,7 +623,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 // 處理中斷
                 if (message.serverContent && message.serverContent.interrupted) {
                     lh1Processor.stopAllPlayback();
-                    lh1UI.updateStatus('正在傾聽...', 'listening');
+                    lh1UI.updateStatus('Huson 正在聆聽...', 'listening');
                     lh1Processor.playChime();
                 }
             };
@@ -632,7 +634,7 @@ document.addEventListener('DOMContentLoaded', () => {
             };
 
             await lh1Client.connect(apiKey, systemInstruction);
-            lh1UI.updateStatus('連線成功，準備開始...', 'listening');
+            lh1UI.updateStatus('Huson 正在聆聽...', 'listening');
 
         } catch (error) {
             console.error('LH1 Live Mode 初始化失敗:', error);
@@ -642,6 +644,9 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     const stopLH1LiveMode = () => {
+        if (lh1Processor) {
+            lh1Processor.playEndCallSound();
+        }
         if (lh1Client) {
             lh1Client.disconnect();
         }
