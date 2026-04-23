@@ -593,6 +593,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         if (lh1Processor) {
             lh1Processor.stopCapture();
+            lh1Processor.stopAllPlayback(); // Stop all audio immediately
         }
         if (lh1UI) {
             lh1UI.hide();
