@@ -9,6 +9,7 @@ class AudioProcessor {
         this.stream = null;
         this.mediaRecorder = null;
         this.inputSampleRate = 16000;
+        this.outputSampleRate = 24000; // Gemini Live outputs at 24kHz
         this.isRecording = false;
         this.onAudioData = null;
         this.audioQueue = [];
@@ -145,7 +146,7 @@ class AudioProcessor {
             float32Data[i] = int16Data[i] / 32768.0;
         }
         
-        const audioBuffer = this.audioContext.createBuffer(1, float32Data.length, this.inputSampleRate);
+        const audioBuffer = this.audioContext.createBuffer(1, float32Data.length, this.outputSampleRate);
         audioBuffer.getChannelData(0).set(float32Data);
         
         const source = this.audioContext.createBufferSource();
@@ -194,7 +195,14 @@ class LiveAPIClient {
                             parts: [{ text: systemInstruction }]
                         },
                         generationConfig: {
-                            responseModalities: ["AUDIO"]
+                            responseModalities: ["AUDIO"],
+                            speechConfig: {
+                                voiceConfig: {
+                                    prebuiltVoiceConfig: {
+                                        voiceName: "Puck" // A more youthful and clear voice
+                                    }
+                                }
+                            }
                         }
                     }
                 };
