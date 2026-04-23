@@ -135,11 +135,12 @@ class LiveAPIClient {
         this.onMessage = null;
         this.onError = null;
         this.onClose = null;
-        this.model = "models/gemini-2.0-flash-exp"; // 目前支援 Live 的模型路徑
+        this.model = "models/gemini-live-2.5-flash-native-audio"; // 正確的 Gemini 2.5 Live 模型名稱
     }
 
     async connect(apiKey, systemInstruction) {
-        const url = `wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1alpha.GenerativeService.BidiGenerateContent?key=${apiKey}`;
+        // 使用 v1beta 版本，這通常是 Gemini 2.5 Live 支援的版本
+        const url = `wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContent?key=${apiKey}`;
         
         this.ws = new WebSocket(url);
 
@@ -151,7 +152,7 @@ class LiveAPIClient {
                     setup: {
                         model: this.model,
                         generation_config: {
-                            response_modalities: ["audio"],
+                            response_modalities: ["AUDIO"],
                             speech_config: {
                                 voice_config: { prebuilt_voice_config: { voice_name: "Aoide" } }
                             }
@@ -177,13 +178,15 @@ class LiveAPIClient {
             };
 
             this.ws.onerror = (error) => {
+                console.error("[LiveAPI] WebSocket Error:", error);
                 if (this.onError) this.onError(error);
                 reject(error);
             };
 
-            this.ws.onclose = () => {
+            this.ws.onclose = (event) => {
                 this.isConnected = false;
-                if (this.onClose) this.onClose();
+                console.warn(`[LiveAPI] Connection closed: Code ${event.code}, Reason: ${event.reason || "No reason provided"}`);
+                if (this.onClose) this.onClose(event);
             };
         });
     }
