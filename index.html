@@ -31,7 +31,7 @@
                 <div class="selection-card glass-panel" data-chat="huson2.5">
                     <div class="card-content">
                         <div class="card-icon-wrapper">
-                            <div class="card-icon">🧠</div>
+                            <div class="card-icon"><i class="fas fa-brain"></i></div>
                         </div>
                         <h2>Huson 3.0 Pro</h2>
                         <p>旗艦級智能。專精於深度推理、程式碼生成與複雜問題解決。</p>
@@ -45,10 +45,10 @@
                 <div class="selection-card glass-panel" data-chat="huson2.0">
                     <div class="card-content">
                         <div class="card-icon-wrapper">
-                            <div class="card-icon">⚡️</div>
+                            <div class="card-icon"><i class="fas fa-bolt"></i></div>
                         </div>
-                        <h2>Gemma 4 26B</h2>
-                        <p>極速響應。採用最新 Gemma 4 架構，兼具高效能與精準度。</p>
+                        <h2>Huson 3.0 Mini</h2>
+                        <p>極速響應。採用最新架構優化，適合日常任務與快速對話。</p>
                         <div class="card-footer">
                             <span class="tag">最快速</span>
                             <i class="fas fa-arrow-right"></i>
@@ -59,7 +59,7 @@
                 <div class="selection-card glass-panel" data-chat="oh3">
                     <div class="card-content">
                         <div class="card-icon-wrapper">
-                            <div class="card-icon">🪶</div>
+                            <div class="card-icon"><i class="fas fa-feather-pointed"></i></div>
                         </div>
                         <h2>OH3</h2>
                         <p>最輕量化的模型。當兩款模型都出錯時的替代模型，不提供搜尋支援。</p>
@@ -73,7 +73,7 @@
                 <div class="selection-card glass-panel live-card" data-chat="lh1">
                     <div class="card-content">
                         <div class="card-icon-wrapper">
-                            <div class="card-icon">🎙️</div>
+                            <div class="card-icon"><i class="fas fa-microphone-alt"></i></div>
                         </div>
                         <h2>LH1 (Huson Live)</h2>
                         <p>次世代語音互動。支援國、台語即時對話，如同真人般的對談體驗。</p>
@@ -84,9 +84,10 @@
                     </div>
                 </div>
 
+                <div class="selection-card glass-panel" data-chat="studio">
                     <div class="card-content">
                         <div class="card-icon-wrapper">
-                            <div class="card-icon">💬</div>
+                            <div class="card-icon"><i class="fas fa-comments"></i></div>
                         </div>
                         <h2>工作室支援</h2>
                         <p>需要協助或有任何建議嗎？直接與我們的開發團隊聯繫。</p>
@@ -138,32 +139,45 @@
         </div>
     </div>
 
-    <!-- Update Modal -->
-    <div id="update-modal" class="update-modal" role="dialog" aria-modal="true" aria-hidden="true">
-        <div class="update-modal-overlay" data-close="true"></div>
-        <div class="update-modal-dialog glass-panel">
-            <header class="update-modal-header">
-                <div class="modal-icon">✨</div>
-                <h2 id="update-title">最新消息</h2>
-            </header>
-            <section class="update-modal-body">
-                <div class="version-tag">v18.0.0</div>
-                <ul>
-                    <li><strong>訊息複製：</strong> 每條訊息都可以一鍵複製！懸停顯示複製按鈕，支持手動選取文字，複製後會有視覺反饋和通知提示。</li>
-                    <li><strong>手機版優化：</strong> 完整修復輸入框被瀏覽器工具欄遮擋的問題，複製按鈕現在顯示在訊息下方，不會遮擋文字內容。</li>
-                    <li><strong>換行保留：</strong> 多行訊息的換行符號現在會正確保留和顯示，不會再擠成一行。</li>
-                    <li><strong>安全區域支援：</strong> 使用 CSS 環境變數自動適應 iPhone 瀏海和 Android 手勢欄，確保完美顯示。</li>
-                    <li><strong>開發日常：</strong> 持續優化使用體驗，讓每次對話都更順暢！</li>
-                </ul>
-                <div class="dismiss-wrapper">
-                    <label class="update-dismiss">
+    <!-- 更新日報彈窗 (廣告風格) -->
+    <div id="update-modal" class="modal-overlay hidden" role="dialog" aria-modal="true">
+        <div class="announcement-card glass-panel animate-pop-in">
+            <div class="announcement-badge">UPDATE</div>
+            <div class="announcement-content">
+                <div class="announcement-icon"><i class="fas fa-rocket"></i></div>
+                <h1>Huson 3.0 重大更新</h1>
+                <div class="update-features">
+                    <div class="feature-item">
+                        <div class="feature-icon"><i class="fas fa-brain"></i></div>
+                        <div class="feature-text">
+                            <h3>深度思考能力</h3>
+                            <p>Pro 模型現在具備「思維鏈」推理，能處理更複雜的邏輯問題。</p>
+                        </div>
+                    </div>
+                    <div class="feature-item">
+                        <div class="feature-icon"><i class="fas fa-microphone-alt"></i></div>
+                        <div class="feature-text">
+                            <h3>LH1 Live 模式</h3>
+                            <p>次世代語音模型，支援即時國台語對話，體驗如同真人對談。</p>
+                        </div>
+                    </div>
+                    <div class="feature-item">
+                        <div class="feature-icon"><i class="fas fa-bolt"></i></div>
+                        <div class="feature-text">
+                            <h3>Huson 3.0 Mini</h3>
+                            <p>模型核心升級，反應更迅速，日常對話的首選。</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="dismiss-wrapper" style="margin-top: 20px;">
+                    <label class="update-dismiss" style="color: rgba(255,255,255,0.6); font-size: 0.85rem; cursor: pointer;">
                         <input type="checkbox" id="update-dismiss-checkbox"> 下次不再顯示
                     </label>
                 </div>
-            </section>
-            <footer class="update-modal-footer">
-                <button id="update-close-btn" class="btn-primary">知道了</button>
-            </footer>
+                <div class="announcement-actions" style="margin-top: 20px;">
+                    <button id="update-close-btn" class="primary-btn">立即體驗</button>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -173,7 +187,7 @@
         <div class="announcement-card glass-panel animate-pop-in">
             <div class="announcement-badge">NEW</div>
             <div class="announcement-content">
-                <div class="announcement-icon">🎙️</div>
+                <div class="announcement-icon"><i class="fas fa-microphone-alt"></i></div>
                 <h1>LH1 Live 正式推出！</h1>
                 <p>全新語音互動體驗，現在支援 <strong>道地台語</strong> 對話。</p>
                 <p class="announcement-sub">與 Huson 開啟一場如同真人般的即時語音連線吧！</p>

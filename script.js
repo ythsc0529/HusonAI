@@ -24,7 +24,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // 若 localStorage 設定了 hideUpdates=true 則不顯示，否則每次登入顯示
     const hideUpdates = localStorage.getItem('hideUpdates') === 'true';
     if (!hideUpdates) {
-        updateModal.classList.add('active');
+        updateModal.classList.remove('hidden');
         updateModal.setAttribute('aria-hidden', 'false');
     }
 
@@ -32,7 +32,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (updateDismissCheckbox && updateDismissCheckbox.checked) {
             localStorage.setItem('hideUpdates', 'true');
         }
-        updateModal.classList.remove('active');
+        updateModal.classList.add('hidden');
         updateModal.setAttribute('aria-hidden', 'true');
 
         // 顯示 LH1 宣傳彈窗
@@ -75,12 +75,10 @@ document.addEventListener('DOMContentLoaded', () => {
     if (hideUpdates) {
         showAnnouncementModal();
     }
-    // 點遮罩也關閉
-    const overlay = document.querySelector('.update-modal-overlay');
-    if (overlay) overlay.addEventListener('click', closeUpdateModal);
+    
     // Esc 鍵關閉
     document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape' && updateModal.classList.contains('active')) closeUpdateModal();
+        if (e.key === 'Escape' && !updateModal.classList.contains('hidden')) closeUpdateModal();
     });
 
     // 全域變數
