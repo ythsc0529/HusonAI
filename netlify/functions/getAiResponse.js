@@ -57,7 +57,7 @@ exports.handler = async (event) => {
 
         // 嘗試對所有新型號啟用 systemInstruction (Gemma 3/4 與 Gemini 2.x/1.x 應皆支援)
         // 僅對極舊或特殊型號退回到手動注入
-        const isLegacyGemma = modelName.includes('gemma-7b') || modelName.includes('gemma-2b');
+        const isLegacyGemma = modelName.includes('gemma-7b') || modelName.includes('gemma-2b') || modelName.includes('gemma-3');
         const supportsSystemInstruction = !isLegacyGemma;
 
         let sanitizedHistory = history;
