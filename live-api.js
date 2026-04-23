@@ -135,12 +135,12 @@ class LiveAPIClient {
         this.onMessage = null;
         this.onError = null;
         this.onClose = null;
-        this.model = "models/gemini-live-2.5-flash-native-audio"; // 正確的 Gemini 2.5 Live 模型名稱
+        this.model = "models/gemini-2.5-flash-live"; // 修正為 Gemini 2.5 Live 的正確 API ID
     }
 
     async connect(apiKey, systemInstruction) {
-        // 使用 v1beta 版本，這通常是 Gemini 2.5 Live 支援的版本
-        const url = `wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContent?key=${apiKey}`;
+        // 切換回 v1alpha，這是支援 2.5 Live 雙向串流的穩定介面
+        const url = `wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1alpha.GenerativeService.BidiGenerateContent?key=${apiKey}`;
         
         this.ws = new WebSocket(url);
 
