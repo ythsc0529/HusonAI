@@ -37,23 +37,28 @@ class AudioProcessor {
                 throw new Error('AudioWorklet not supported');
             }
 
-            // Create worklet code as a Blob
-            const workletCode = `
-                class AudioCaptureProcessor extends AudioWorkletProcessor {
-                    process(inputs, outputs, parameters) {
-                        const input = inputs[0];
-                        if (input.length > 0) {
-                            const inputData = input[0];
-                            this.port.postMessage(inputData);
+            // Only add the module if it hasn't been added yet
+            if (!this.workletLoaded) {
+                // Create worklet code as a Blob
+                const workletCode = `
+                    class AudioCaptureProcessor extends AudioWorkletProcessor {
+                        process(inputs, outputs, parameters) {
+                            const input = inputs[0];
+                            if (input.length > 0) {
+                                const inputData = input[0];
+                                this.port.postMessage(inputData);
+                            }
+                            return true;
                         }
-                        return true;
                     }
-                }
-                registerProcessor('audio-capture-processor', AudioCaptureProcessor);
-            `;
-            const blob = new Blob([workletCode], { type: 'application/javascript' });
-            const url = URL.createObjectURL(blob);
-            await this.audioContext.audioWorklet.addModule(url);
+                    registerProcessor('audio-capture-processor', AudioCaptureProcessor);
+                `;
+                const blob = new Blob([workletCode], { type: 'application/javascript' });
+                const url = URL.createObjectURL(blob);
+                await this.audioContext.audioWorklet.addModule(url);
+                this.workletLoaded = true;
+                URL.revokeObjectURL(url);
+            }
             
             this.stream = await navigator.mediaDevices.getUserMedia({ audio: true });
             const source = this.audioContext.createMediaStreamSource(this.stream);
@@ -69,7 +74,6 @@ class AudioProcessor {
             
             source.connect(this.workletNode);
             this.isRecording = true;
-            URL.revokeObjectURL(url);
         } catch (e) {
             console.warn('Fallback to ScriptProcessorNode due to:', e.message);
             // Fallback to legacy ScriptProcessorNode if AudioWorklet fails
