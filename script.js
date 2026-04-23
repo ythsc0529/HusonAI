@@ -235,6 +235,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
+    const loadChat = (chatId) => {
         if (chatId === 'lh1') {
             loadLH1LiveMode();
             return;
