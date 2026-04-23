@@ -76,7 +76,7 @@
                             <div class="card-icon">🎙️</div>
                         </div>
                         <h2>LH1 (Huson Live)</h2>
-                        <p>次世代語音互動。如同真人般的即時對話體驗，具備情感與視覺感知。</p>
+                        <p>次世代語音互動。支援國、台語即時對話，如同真人般的對談體驗。</p>
                         <div class="card-footer">
                             <span class="tag">Live</span>
                             <i class="fas fa-arrow-right"></i>
@@ -168,6 +168,23 @@
     </div>
 
     <div id="notification-container" class="notification-container"></div>
+    <!-- 新功能宣傳彈窗 -->
+    <div id="announcement-modal" class="modal-overlay hidden">
+        <div class="announcement-card glass-panel animate-pop-in">
+            <div class="announcement-badge">NEW</div>
+            <div class="announcement-content">
+                <div class="announcement-icon">🎙️</div>
+                <h1>LH1 Live 正式推出！</h1>
+                <p>全新語音互動體驗，現在支援 <strong>道地台語</strong> 對話。</p>
+                <p class="announcement-sub">與 Huson 開啟一場如同真人般的即時語音連線吧！</p>
+                <div class="announcement-actions">
+                    <button id="try-lh1-btn" class="primary-btn pulse-animation">立即試用</button>
+                    <button id="close-announcement" class="secondary-link">稍後再說</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="live-api.js"></script>
     <script src="script.js"></script>
