@@ -532,6 +532,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             lh1Client.onOpen = () => {
                 lh1UI.updateStatus('LH1 已就緒', 'idle');
+                lh1Processor.playChime(); // Play chime when ready
                 lh1Processor.startCapture((base64) => {
                     if (lh1Client && lh1Client.isConnected) {
                         lh1Client.sendAudio(base64);
@@ -558,6 +559,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     setTimeout(() => {
                         if (lh1Client.isConnected) {
                             lh1UI.updateStatus('正在傾聽...', 'listening');
+                            lh1Processor.playChime();
                         }
                     }, 500);
                 }
@@ -566,6 +568,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (message.serverContent && message.serverContent.interrupted) {
                     lh1Processor.stopAllPlayback();
                     lh1UI.updateStatus('正在傾聽...', 'listening');
+                    lh1Processor.playChime();
                 }
             };
 

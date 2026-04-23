@@ -15,6 +15,7 @@ class AudioProcessor {
         this.audioQueue = [];
         this.isPlaying = false;
         this.nextStartTime = 0;
+        this.activeSources = new Set();
     }
 
     async initialize() {
@@ -158,13 +159,51 @@ class AudioProcessor {
             this.nextStartTime = currentTime;
         }
         
+        source.onended = () => {
+            this.activeSources.delete(source);
+        };
+        
+        this.activeSources.add(source);
         source.start(this.nextStartTime);
         this.nextStartTime += audioBuffer.duration;
     }
 
     stopAllPlayback() {
+        // Stop all active audio nodes
+        this.activeSources.forEach(source => {
+            try {
+                source.stop();
+            } catch (e) {
+                // Might already be stopped
+            }
+        });
+        this.activeSources.clear();
+        
         // Reset nextStartTime to allow immediate playback of new audio
         this.nextStartTime = this.audioContext.currentTime;
+    }
+
+    // Play a soft notification chime
+    playChime() {
+        if (!this.audioContext) return;
+        
+        const now = this.audioContext.currentTime;
+        const oscillator = this.audioContext.createOscillator();
+        const gainNode = this.audioContext.createGain();
+        
+        oscillator.type = 'sine';
+        oscillator.frequency.setValueAtTime(440, now); // A4
+        oscillator.frequency.exponentialRampToValueAtTime(880, now + 0.1); // A5
+        
+        gainNode.gain.setValueAtTime(0, now);
+        gainNode.gain.linearRampToValueAtTime(0.1, now + 0.05);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+        
+        oscillator.connect(gainNode);
+        gainNode.connect(this.audioContext.destination);
+        
+        oscillator.start(now);
+        oscillator.stop(now + 0.3);
     }
 }
 
