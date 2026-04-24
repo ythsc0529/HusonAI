@@ -213,13 +213,9 @@ exports.handler = async (event) => {
         // 記錄下最詳細的錯誤物件
         console.error("[ERROR] An error occurred:", JSON.stringify(error, null, 2));
 
-        const userFriendlyError = (error.response && error.response.data && error.response.data.error)
-            ? error.response.data.error.message
-            : error.message;
-
         return {
             statusCode: 500,
-            body: JSON.stringify({ error: `AI 伺服器好像在打瞌睡...💤 (${userFriendlyError})` }),
+            body: JSON.stringify({ error: `AI 伺服器繁忙中，請稍後再試。` }),
         };
     }
 };

@@ -235,38 +235,31 @@ document.addEventListener('DOMContentLoaded', () => {
             console.error("呼叫 AI 時出錯:", error);
             removeTypingIndicator();
 
-            let errorMessage = `哎呀，好像出錯了捏... 歹勢啦！😥\n錯誤訊息: ${error.message}`;
-            let notificationMessage = error.message;
+            let errorMessage = `哎呀，伺服器好像太忙了捏... 歹勢啦！😥\n請稍後再試。`;
+            let notificationMessage = "伺服器繁忙，請稍後再試。";
 
             // 針對超時錯誤提供特別建議
             const isTimeout = error.message.includes('超時') || error.message.includes('timeout');
 
             if (isTimeout) {
                 if (imageData) {
-                    errorMessage += '\n\n💡 圖片分析超時建議：\n1. 圖片已自動壓縮，但仍可能太複雜\n2. 嘗試使用「Huson 3.0 mini」或「OH3」模型（處理速度較快）\n3. 稍後再試一次';
-                    notificationMessage += ' (圖片分析超時，建議使用 Mini 或 OH3 模型)';
+                    errorMessage += '\n\n💡 建議：\n1. 圖片可能太複雜，請換一張試試\n2. 嘗試切換模型（如 Mini）\n3. 稍後再試一次';
+                    notificationMessage = '請求超時，請稍後再試。';
                 } else {
-                    errorMessage += '\n\n💡 處理超時建議：\n1. 嘗試簡化您的問題\n2. 稍後再試一次';
-                    notificationMessage += ' (處理超時，建議稍後再試)';
+                    errorMessage += '\n\n💡 建議：\n1. 嘗試簡化您的問題\n2. 稍後再試一次';
+                    notificationMessage = '請求超時，請稍後再試。';
                 }
             } else if (currentChatId === 'huson2.5') {
-                const suggestion = '\n\n💡 建議：您可以嘗試使用「Huson 3.0 mini」或「OH3」模型，或是重新整理網頁再試一次。';
-                errorMessage += suggestion;
-                notificationMessage += ' (建議嘗試 Mini 或 OH3 模型或重整網頁)';
+                errorMessage += '\n\n💡 建議：您可以嘗試使用「Huson 3.0 mini」模型，或是重新整理網頁再試一次。';
             } else if (currentChatId === 'huson2.0') {
-                const suggestion = '\n\n💡 建議：您可以嘗試使用「OH3」模型，或是重新整理網頁再試一次。';
-                errorMessage += suggestion;
-                notificationMessage += ' (建議嘗試 OH3 模型或重整網頁)';
-            } else if (currentChatId === 'oh3') {
-                const suggestion = '\n\n💡 建議：請嘗試重新整理網頁再試一次。';
-                errorMessage += suggestion;
-                notificationMessage += ' (建議重整網頁)';
+                errorMessage += '\n\n💡 建議：您可以嘗試使用「OH3」模型，或是重新整理網頁再試一次。';
+            } else {
+                errorMessage += '\n\n💡 建議：請嘗試重新整理網頁再試一次。';
             }
 
-            showNotification('發生錯誤', notificationMessage, 'error');
             appendMessage('ai', errorMessage);
+            showNotification('發送失敗', notificationMessage, 'error');
         } finally {
-            // 無論成功或失敗都重新啟用按鈕
             sendBtn.disabled = false;
         }
     };
